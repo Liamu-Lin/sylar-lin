@@ -2,6 +2,29 @@
 
 namespace sylar{
 
+class StringFormatterItem : public LogFormatter::FormatterItem{
+public:
+    StringFormatterItem(const std::string& str): str_(str){;}
+    void format(std::ostream& os, LogEvent::ptr event) override{
+        os << str_;
+    }
+private:
+    std::string str_;
+}
+class MessageFormatterItem : public LogFormatter::FormatterItem{
+public:
+    MessageFormatterItem(const std::string& str = ""){;}
+    void format(std::ostream& os, LogEvent::ptr event) override{
+        os << event->get_content();
+    }
+}
+class LevelFormatterItem : public LogFormatter::FormatterItem{
+public:
+    LevelFormatterItem(const std::string& str = ""){;}
+    void format(std::ostream& os, LogEvent::ptr event) override{
+        os << event->get_();
+    }
+}
 
 
 Logger::Logger(const std::string name)
@@ -13,7 +36,7 @@ void Logger::log(LogLevel level, LogEvent::ptr event){
     if(level < level_)
         return;
     for(auto& appender: appenders_)
-        appender->log(level, event);
+        appender->log(*this, level, event);
 }
 void Logger::deubg(LogEvent::ptr event){
     log(LogLevel::DEBUG, event);
@@ -45,15 +68,49 @@ bool Logger::del_appender(LogAppender::ptr appender){
     return false;
 }
 
-LogLevel Logger::get_level() const {
-    return level_;
+
+//LogLevel
+static const std::string LogLevel::to_string(Level level){
+    switch(level){
+        case(DEBUG):
+            return "DEBUG";
+        case(INFO):
+            return "INFO";
+        case(WARN):
+            return "WARN";
+        case(ERROR):
+            return "ERROR";
+        case(FATAL):
+            return "FATAL";
+        default:
+            return "UNKNOWN";
+    }
+    return "UNKNOWN";
 }
-void Logger::set_level(LogLevel level) {
-    level_ = level;
+static LogLevel::Level LogLevel::from_string(const std::string& str){
+    if(str == "DEBUG" || str == "debug")
+        return DEBUG;
+    else if(str == "INFO" || str == "info")
+        return INFO;
+    else if(str == "WARN" || str == "warn")
+        return WARN;
+    else if(str == "ERROR" || str == "error")
+        return ERROR;
+    else if(str == "FATAL" || str == "fatal")
+        return FATAL;
+    return UNKNOWN;
 }
+
+
+//LogEvent
+
 
 
 //LogAppender
+LogAppender::~LogAppender(){
+    ;
+}
+
 void LogAppender::set_formatter(LogFormatter::ptr formatter){
     formatter_ = formatter;
 }
@@ -62,10 +119,10 @@ LogFormatter::ptr LogAppender::get_formatter() const{
 }
 
 //StdoutLogAppender
-void StdoutLogAppender::log(LogLevel level, LogEvent::ptr event) {
+void StdoutLogAppender::log(Log& logger, LogLevel level, LogEvent::ptr event) {
     if(level < level_)
         return;
-    std::cout << formatter_->format(event);
+    formatter_->format(std::cout, logger, level, event);
 }
 
 
@@ -75,10 +132,10 @@ FileLogAppender::FileLogAppender(const std::string& file_name)
 
 }
 
-void FileLogAppender::log(LogLevel level, LogEvent::ptr event) {
+void FileLogAppender::log(Log& logger, LogLevel level, LogEvent::ptr event) {
     if(level < level_)
         return;
-    file_ostream_ << formatter_->format(event);
+    formatter_->format(file_ostream_, logger, level, event);
 }
 
 bool FileLogAppender::reopen(){
@@ -87,6 +144,31 @@ bool FileLogAppender::reopen(){
     file_ostream_.open(file_name_);
     return (bool)file_ostream_;
 }
+
+//LogFormatter
+LogFormatter::LogFormatter(const std::string& pattern)
+    :pattern_(pattern){
+    ;
+}
+
+bool LogFormatter::init_items(){
+    ;
+}
+
+void LogFormatter::format(std::ostream& os, Logger& logger, LogLevel level, LogEvent::ptr event){
+    for(auto& item: items_)
+        item->format(os, event);
+}
+
+
+
+
+//FormatterItem
+LogFormatter::FormatterItem::~FormatterItem(){
+    ;
+}
+
+
 
 
 }
