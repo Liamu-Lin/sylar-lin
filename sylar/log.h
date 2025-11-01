@@ -14,9 +14,11 @@
 
 namespace sylar{
 
+class Logger;
+
 class LogLevel{
 public:
-    enum Level{
+    enum class Level : int {
         UNKNOWN = 0,
         DEBUG = 1,
         INFO = 2,
@@ -24,7 +26,7 @@ public:
         ERROR = 4,
         FATAL = 5
     };
-
+    LogLevel() = delete;
     static const std::string to_string(Level level);
     static Level from_string(const std::string& str);
 };
@@ -58,26 +60,22 @@ private:
 class LogFormatter{
 public:
     typedef std::shared_ptr<LogFormatter> ptr;
-
-    LogFormatter(const std::string& pattern);
-
-    //format the event to to specified format and output to os
-    void format(std::ostream& os, Logger::ptr logger, LogLevel level, LogEvent::ptr event);
-
-    bool is_legal_pattern() const { return legal_pattern_; }
-
-private:
     class FormatterItem{
     public:
         typedef std::shared_ptr<FormatterItem> ptr;
         //safe when delete derived class
         virtual ~FormatterItem();
-
         //format the item to to specified format and output to os
-        void virtual format(std::ostream& os, Logger::ptr logger, LogLevel level, LogEvent::ptr event) = 0;
-    
+        void virtual format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) = 0;
         static bool is_legal_item(char c);
     };
+
+    LogFormatter(const std::string& pattern);
+
+    //format the event to to specified format and output to os
+    void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);
+
+    bool is_legal_pattern() const { return legal_pattern_; }
 
 private:
     bool legal_pattern_;
@@ -97,25 +95,25 @@ public:
 
     //force derived class to implement this method
     //only ouput logs whose level is higher than level_
-    virtual void log(Logger::ptr logger, LogLevel level, LogEvent::ptr event) = 0;
+    virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) = 0;
 
     void set_formatter(LogFormatter::ptr formatter);
     LogFormatter::ptr get_formatter() const;
 
 protected:
-    LogLevel level_;    //output logs that meet this level
+    LogLevel::Level level_;    //output logs that meet this level
     LogFormatter::ptr formatter_;
 };
 
 // log outputter
-class Logger{
+class Logger : public std::enable_shared_from_this<Logger>{
 public:
     typedef std::shared_ptr<Logger> ptr;
 
     Logger(const std::string name);
 
     //only ouput logs whose level is higher than level_
-    void log(LogLevel level, LogEvent::ptr event);
+    void log(LogLevel::Level level, LogEvent::ptr event);
     void deubg(LogEvent::ptr event);
     void info(LogEvent::ptr event);
     void warn(LogEvent::ptr event);
@@ -125,13 +123,13 @@ public:
     void add_appender(LogAppender::ptr appender);
     bool del_appender(LogAppender::ptr appender);
 
-    LogLevel get_level() const { return level_; }
-    void set_level(LogLevel level) { level_ = level; }
+    LogLevel::Level get_level() const { return level_; }
+    void set_level(LogLevel::Level level) { level_ = level; }
     std::string get_name() const { return name_; }
 
 private:
     std::string name_;
-    LogLevel level_;    //output logs that meet this level
+    LogLevel::Level level_;    //output logs that meet this level
     std::list<LogAppender::ptr> appenders_;
 
 };
@@ -141,7 +139,7 @@ class StdoutLogAppender : public LogAppender{
 public:
     typedef std::shared_ptr<StdoutLogAppender> ptr;
 
-    void log(Logger::ptr logger, LogLevel level, LogEvent::ptr event) override;
+    void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
 
 private:
 
@@ -154,7 +152,7 @@ public:
 
     FileLogAppender(const std::string& file_name);
 
-    void log(Logger::ptr logger, LogLevel level, LogEvent::ptr event) override;
+    void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
 
     //return true if reopen successfully
     bool reopen();
