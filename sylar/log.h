@@ -41,6 +41,7 @@ public:
     uint32_t get_fiber_id() const { return fiber_id_; }
     uint32_t get_thread_id() const { return thread_id_; }
     std::string get_content() const { return content_; }
+    std::string get_thread_name() const { return thread_name_; }
 
 private:
     std::string file_name_;
@@ -50,6 +51,7 @@ private:
     uint32_t fiber_id_ = 0; 
     uint32_t thread_id_ = 0;
     std::string content_;
+    std::string thread_name_;
 };
 
 // log formatter
@@ -59,10 +61,10 @@ public:
 
     LogFormatter(const std::string& pattern);
 
-    bool init_items();
-
     //format the event to to specified format and output to os
-    void format(std::ostream& os, Logger& logger, LogLevel level, LogEvent::ptr event);
+    void format(std::ostream& os, Logger::ptr logger, LogLevel level, LogEvent::ptr event);
+
+    bool is_legal_pattern() const { return legal_pattern_; }
 
 private:
     class FormatterItem{
@@ -72,12 +74,17 @@ private:
         virtual ~FormatterItem();
 
         //format the item to to specified format and output to os
-        void virtual format(std::ostream& os, LogEvent::ptr event) = 0;
+        void virtual format(std::ostream& os, Logger::ptr logger, LogLevel level, LogEvent::ptr event) = 0;
+    
+        static bool is_legal_item(char c);
     };
 
 private:
+    bool legal_pattern_;
     std::string pattern_;
     std::vector<FormatterItem::ptr> items_;
+
+    bool init_items();
 };
 
 // log output location
@@ -90,7 +97,7 @@ public:
 
     //force derived class to implement this method
     //only ouput logs whose level is higher than level_
-    virtual void log(Logger& logger, LogLevel level, LogEvent::ptr event) = 0;
+    virtual void log(Logger::ptr logger, LogLevel level, LogEvent::ptr event) = 0;
 
     void set_formatter(LogFormatter::ptr formatter);
     LogFormatter::ptr get_formatter() const;
@@ -120,6 +127,7 @@ public:
 
     LogLevel get_level() const { return level_; }
     void set_level(LogLevel level) { level_ = level; }
+    std::string get_name() const { return name_; }
 
 private:
     std::string name_;
@@ -133,7 +141,7 @@ class StdoutLogAppender : public LogAppender{
 public:
     typedef std::shared_ptr<StdoutLogAppender> ptr;
 
-    void log(Logger& logger, LogLevel level, LogEvent::ptr event) override;
+    void log(Logger::ptr logger, LogLevel level, LogEvent::ptr event) override;
 
 private:
 
@@ -146,7 +154,7 @@ public:
 
     FileLogAppender(const std::string& file_name);
 
-    void log(Logger& logger, LogLevel level, LogEvent::ptr event) override;
+    void log(Logger::ptr logger, LogLevel level, LogEvent::ptr event) override;
 
     //return true if reopen successfully
     bool reopen();
