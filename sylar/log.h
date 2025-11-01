@@ -2,6 +2,7 @@
 #define __SYLAR_LOG_H__
 
 #include <stdint.h>
+#include <stdarg.h>
 #include <string>
 #include <memory>
 
@@ -36,23 +37,28 @@ class LogEvent{
 public:
     typedef std::shared_ptr<LogEvent> ptr;
 
+    LogEvent(const std::string& file_name, int32_t line, uint32_t elapse,
+             uint32_t thread_id, uint32_t fiber_id, uint64_t time);
+
     std::string get_file_name() const { return file_name_; }
     int32_t get_line() const { return line_; }
     uint32_t get_elapse() const { return elapse_; }
     uint64_t get_time() const { return time_; }
     uint32_t get_fiber_id() const { return fiber_id_; }
     uint32_t get_thread_id() const { return thread_id_; }
-    std::string get_content() const { return content_; }
+    std::string get_content() const { return ss_.str(); }
     std::string get_thread_name() const { return thread_name_; }
+
+    bool set_content(const std::string& fmt, ...);
 
 private:
     std::string file_name_;
     int32_t line_ = 0;
     uint32_t elapse_ = 0;   //in microsecond
-    uint64_t time_ = 0;     //time when the LogEvent was recorded
     uint32_t fiber_id_ = 0; 
     uint32_t thread_id_ = 0;
-    std::string content_;
+    uint64_t time_ = 0;     //time when the LogEvent was recorded
+    std::stringstream ss_;
     std::string thread_name_;
 };
 
@@ -99,6 +105,8 @@ public:
 
     void set_formatter(LogFormatter::ptr formatter);
     LogFormatter::ptr get_formatter() const;
+    void set_level(LogLevel::Level level) { level_ = level; }
+    LogLevel::Level get_level() const { return level_; }
 
 protected:
     LogLevel::Level level_;    //output logs that meet this level
@@ -110,7 +118,7 @@ class Logger : public std::enable_shared_from_this<Logger>{
 public:
     typedef std::shared_ptr<Logger> ptr;
 
-    Logger(const std::string name);
+    Logger(const std::string name, LogLevel::Level level = LogLevel::Level::DEBUG);
 
     //only ouput logs whose level is higher than level_
     void log(LogLevel::Level level, LogEvent::ptr event);
