@@ -186,7 +186,7 @@ LogLevel::Level LogLevel::from_string(const std::string& str){
 
 //LogEvent
 LogEvent::LogEvent(const std::string& file_name, int32_t line, uint32_t elapse,
-             uint32_t thread_id, uint32_t fiber_id, uint64_t time)
+             pid_t thread_id, fid_t fiber_id, uint64_t time)
     :file_name_(file_name),
     line_(line),
     elapse_(elapse),
@@ -207,6 +207,22 @@ bool LogEvent::set_content(const std::string& fmt, ...){
     }
     va_end(al);
     return true;
+}
+
+//LogEventWrap
+LogEventWrap::LogEventWrap(std::shared_ptr<Logger> logger, std::shared_ptr<LogEvent> event, LogLevel::Level level)
+    :logger_(logger),
+    event_(event),
+    level_(level){
+    ;
+}
+
+LogEventWrap::~LogEventWrap(){
+    logger_->log(level_, event_);
+}
+
+std::stringstream& LogEventWrap::get_ss(){
+    return event_->get_ss();
 }
 
 //LogAppender
@@ -232,7 +248,11 @@ void StdoutLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level leve
 //FileLogAppender
 FileLogAppender::FileLogAppender(const std::string& file_name)
     :file_name_(file_name){
-
+    file_ostream_.open(file_name_);
+    if(file_ostream_)
+        std::cout << "Open File success.\n" << file_name << '\n';
+    else
+        std::cout << "Open File fail.\n" << file_name << '\n';
 }
 
 void FileLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) {
@@ -349,8 +369,6 @@ void LogFormatter::format(std::ostream& os, std::shared_ptr<Logger> logger, LogL
     for(auto& item: items_)
         item->format(os, logger, level, event);
 }
-
-
 
 
 //FormatterItem

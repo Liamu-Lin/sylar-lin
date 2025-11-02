@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <string>
 #include <memory>
+#include <thread>
 
 #include <vector>
 #include <list>
@@ -12,6 +13,15 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
+#include "util.h"
+
+
+#define SYLAR_LOG(logger, level) \
+    if(logger->get_level() <= level)  \
+        sylar::LogEventWrap(logger, sylar::LogEvent::ptr(new sylar::LogEvent(__FILE__, __LINE__, \
+                                clock(), sylar::get_thread_id(), sylar::get_fiber_id(), time(0))), level).get_ss()
+
 
 namespace sylar{
 
@@ -38,16 +48,17 @@ public:
     typedef std::shared_ptr<LogEvent> ptr;
 
     LogEvent(const std::string& file_name, int32_t line, uint32_t elapse,
-             uint32_t thread_id, uint32_t fiber_id, uint64_t time);
+             pid_t thread_id, fid_t fiber_id, uint64_t time);
 
     std::string get_file_name() const { return file_name_; }
     int32_t get_line() const { return line_; }
     uint32_t get_elapse() const { return elapse_; }
     uint64_t get_time() const { return time_; }
     uint32_t get_fiber_id() const { return fiber_id_; }
-    uint32_t get_thread_id() const { return thread_id_; }
+    const std::thread::id& get_thread_id() const { return thread_id_; }
     std::string get_content() const { return ss_.str(); }
     std::string get_thread_name() const { return thread_name_; }
+    std::stringstream& get_ss() { return ss_; }
 
     bool set_content(const std::string& fmt, ...);
 
@@ -56,10 +67,24 @@ private:
     int32_t line_ = 0;
     uint32_t elapse_ = 0;   //in microsecond
     uint32_t fiber_id_ = 0; 
-    uint32_t thread_id_ = 0;
+    std::thread::id thread_id_;
     uint64_t time_ = 0;     //time when the LogEvent was recorded
     std::stringstream ss_;
     std::string thread_name_;
+};
+
+//log event wrap
+class LogEventWrap{
+public:
+    LogEventWrap(std::shared_ptr<Logger> logger, std::shared_ptr<LogEvent> event, LogLevel::Level level);
+    ~LogEventWrap();
+
+    std::stringstream& get_ss();
+
+private:
+    std::shared_ptr<Logger> logger_;
+    std::shared_ptr<LogEvent> event_;
+    LogLevel::Level level_;
 };
 
 // log formatter
