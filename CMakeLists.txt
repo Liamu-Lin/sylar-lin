@@ -8,6 +8,7 @@ include_directories(./sylar)
 
 set(LIB_SRC
     sylar/log.cpp
+    sylar/util.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})

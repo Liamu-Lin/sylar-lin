@@ -1,7 +1,9 @@
 #include <iostream>
 #include "log.h"
+#include "util.h"
 #include <unistd.h>
 #include <ctime>
+#include <thread>
 
 /*
 case 'm':   //message
@@ -22,15 +24,22 @@ int main(){
     std::cout << "Start test log" << std::endl;
     sylar::Logger::ptr logger(new sylar::Logger("TestLogger"));
 
-    sylar::LogAppender::ptr stdout_appender(new sylar::StdoutLogAppender);
+    //sylar::LogAppender::ptr stdout_appender(new sylar::StdoutLogAppender);
+    sylar::LogAppender::ptr stdout_appender(new sylar::FileLogAppender("test.log"));
     stdout_appender->set_level(sylar::LogLevel::Level::DEBUG);
 
-    sylar::LogFormatter::ptr fmt(new sylar::LogFormatter("%d{%m-%d %Y %H:%M:%S}%n[%p] %c >>>%n%r%nIn file: %f:%l %nContent: %m%ntest %%%n>>> end log%n"));
+    sylar::LogFormatter::ptr fmt(new sylar::LogFormatter(\
+        "%d{%m-%d %Y %H:%M:%S}%n[%p] %c >>>%n%r%nIn file: %f:%l %nContent: %m%ntest %%%ntest %%d%ntest%Ttable%ntest threadID: %t%ntest fiberID: %F%n>>> end log%n"));
     stdout_appender->set_formatter(fmt);
     logger->add_appender(stdout_appender);
-    sylar::LogEvent::ptr event(new sylar::LogEvent(__FILE__, __LINE__, clock(), 0, 0, time(0)));
-    event->set_content("Hello sylar log");
+    sylar::LogEvent::ptr event(new sylar::LogEvent(__FILE__, __LINE__, clock(), sylar::get_thread_id(), sylar::get_fiber_id(), time(0)));
+    event->set_content(">>> This is a test log meassage. <<<");
     logger->log(sylar::LogLevel::Level::DEBUG, event);
+
+
+    std::cout << "Start test log macros." << std::endl;
+    SYLAR_LOG(logger, sylar::LogLevel::Level::DEBUG) << "test log macros.";
+    
 
     // logger->addAppender(sylar::LogAppender::ptr(new sylar::StdoutLogAppender));
 
