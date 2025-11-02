@@ -24,37 +24,36 @@ int main(){
     std::cout << "Start test log" << std::endl;
     sylar::Logger::ptr logger(new sylar::Logger("TestLogger"));
 
-    //sylar::LogAppender::ptr stdout_appender(new sylar::StdoutLogAppender);
-    sylar::LogAppender::ptr stdout_appender(new sylar::FileLogAppender("test.log"));
+    sylar::LogAppender::ptr stdout_appender(new sylar::StdoutLogAppender);
+    //sylar::LogAppender::ptr stdout_appender(new sylar::FileLogAppender("test.log"));
     stdout_appender->set_level(sylar::LogLevel::Level::DEBUG);
-
-    sylar::LogFormatter::ptr fmt(new sylar::LogFormatter(\
-        "%d{%m-%d %Y %H:%M:%S}%n[%p] %c >>>%n%r%nIn file: %f:%l %nContent: %m%ntest %%%ntest %%d%ntest%Ttable%ntest threadID: %t%ntest fiberID: %F%n>>> end log%n"));
-    stdout_appender->set_formatter(fmt);
-    logger->add_appender(stdout_appender);
     sylar::LogEvent::ptr event(new sylar::LogEvent(__FILE__, __LINE__, clock(), sylar::get_thread_id(), sylar::get_fiber_id(), time(0)));
     event->set_content(">>> This is a test log meassage. <<<");
-    logger->log(sylar::LogLevel::Level::DEBUG, event);
-
-
-    std::cout << "Start test log macros." << std::endl;
-    SYLAR_LOG(logger, sylar::LogLevel::Level::DEBUG) << "test log macros.";
+    sylar::LogFormatter::ptr fmt(new sylar::LogFormatter("%d{%m-%d %Y %H:%M:%S}%n[%p] %c >>>%n%r%nIn file: %f:%l %nContent: %m%ntest %%%ntest %%d%ntest%Ttable%ntest threadID: %t%ntest fiberID: %F%n>>> end log%n"));
+    stdout_appender->set_formatter(fmt);
     
-
-    // logger->addAppender(sylar::LogAppender::ptr(new sylar::StdoutLogAppender));
-
-    // sylar::FileLogAppender::ptr file_appender(new sylar::FileLogAppender("./log.txt"));
-    // sylar::LogFormatter::ptr fmt(new sylar::LogFormatter("%d%T%p%T%m%n"));
-    // file_appender->setFormatter(fmt);
-    // file_appender->setLevel(sylar::LogLevel::ERROR);
-
-    // logger->addAppender(file_appender);
-
-    // sylar::LogEvent::ptr event(new sylar::LogEvent(__FILE__, __LINE__, 0, sylar::GetThreadId(), sylar::GetFiberId(), time(0)));
-    // event->getSS() << "hello sylar log";
-    // logger->log(sylar::LogLevel::DEBUG, event);
     
+    // logger->add_appender(stdout_appender);
+
+    // logger->log(sylar::LogLevel::Level::DEBUG, event);
 
 
+    // std::cout << "Start test log macros." << std::endl;
+    // SYLAR_LOG(logger, sylar::LogLevel::Level::FATAL) << "test log macros.";
+    
+    // std::cout << "Start test error formatter." << std::endl;
+    // sylar::LogFormatter::ptr efmt(new sylar::LogFormatter("%d{%m-%d %Y %H:%M:%S}%n[%p] %c >>>%n%r%nIn file: %f:%l %vContent: %m%ntest %%%ntest %%d%ntest%Ttable%ntest threadID: %t%ntest fiberID: %F%n>>> end log%n"));
+    // stdout_appender->set_formatter(efmt);
+    // SYLAR_LOG(logger, sylar::LogLevel::Level::DEBUG) << "test error formatter.";
+    
+    sylar::LoggerMgr.get_root()->log(sylar::LogLevel::Level::DEBUG, event);
+    auto tmp = sylar::LoggerMgr.get_logger("114514");
+    tmp->add_appender(stdout_appender);
+    tmp->log(sylar::LogLevel::Level::DEBUG, event);
+    std::cout << sylar::LoggerMgr.get_logger_cnt();
+    sylar::LoggerMgr.del_logger("hahahaha");
+    std::cout << sylar::LoggerMgr.get_logger_cnt();
+    sylar::LoggerMgr.del_logger("114514");
+    std::cout << sylar::LoggerMgr.get_logger_cnt();
     return 0;
 }

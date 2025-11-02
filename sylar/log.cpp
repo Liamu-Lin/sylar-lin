@@ -109,7 +109,7 @@ public:
 
 Logger::Logger(const std::string name, LogLevel::Level level)
     :name_(name),
-    level_(level) {
+    level_(level){
     ;
 }
 
@@ -148,6 +148,29 @@ bool Logger::del_appender(LogAppender::ptr appender){
         }
     }
     return false;
+}
+
+//LoggerManager
+LoggerManager::LoggerManager(){
+    root_logger_.reset(new Logger("root"));
+    root_logger_->add_appender(std::shared_ptr<LogAppender>(new StdoutLogAppender));
+    loggers_["root"] = root_logger_;
+}
+
+std::shared_ptr<Logger> LoggerManager::get_logger(const std::string& name){
+    auto ret = loggers_.find(name);
+    if(ret != loggers_.end())
+        return ret->second;
+
+    std::shared_ptr<Logger> logger(new Logger(name));
+    loggers_[name] = logger;
+    return logger;
+}
+
+bool LoggerManager::del_logger(const std::string& name){
+    if(name == "root")
+        return false;
+    return loggers_.erase(name);
 }
 
 
@@ -226,6 +249,9 @@ std::stringstream& LogEventWrap::get_ss(){
 }
 
 //LogAppender
+LogAppender::LogAppender(){
+    formatter_.reset(new LogFormatter);
+}
 LogAppender::~LogAppender(){
     ;
 }
@@ -241,7 +267,8 @@ LogFormatter::ptr LogAppender::get_formatter() const{
 void StdoutLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) {
     if(level < level_)
         return;
-    formatter_->format(std::cout, logger, level, event);
+    if(formatter_)
+        formatter_->format(std::cout, logger, level, event);
 }
 
 
@@ -258,7 +285,8 @@ FileLogAppender::FileLogAppender(const std::string& file_name)
 void FileLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) {
     if(level < level_)
         return;
-    formatter_->format(file_ostream_, logger, level, event);
+    if(formatter_)
+        formatter_->format(file_ostream_, logger, level, event);
 }
 
 bool FileLogAppender::reopen(){
@@ -355,7 +383,7 @@ bool LogFormatter::init_items(){
     }
     if(legal_pattern == false){
         items_.clear();
-        items_.push_back(LogFormatter::FormatterItem::ptr(new StringFormatterItem("<<pattern error>>")));
+        items_.push_back(LogFormatter::FormatterItem::ptr(new StringFormatterItem("<<pattern error>>\n")));
         return false;
     }
     else{

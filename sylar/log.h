@@ -2,19 +2,22 @@
 #define __SYLAR_LOG_H__
 
 #include <stdint.h>
-#include <stdarg.h>
+#include <cstdio>
+#include <cstdarg>
 #include <string>
 #include <memory>
 #include <thread>
 
 #include <vector>
 #include <list>
+#include <map>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
 #include "util.h"
+#include "singleton.h"
 
 
 #define SYLAR_LOG(logger, level) \
@@ -101,7 +104,7 @@ public:
         static bool is_legal_item(char c);
     };
 
-    LogFormatter(const std::string& pattern);
+    LogFormatter(const std::string& pattern = "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n");
 
     //format the event to to specified format and output to os
     void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);
@@ -121,6 +124,7 @@ class LogAppender{
 public:
     typedef std::shared_ptr<LogAppender> ptr;
 
+    LogAppender();
     //safe to delete derived classes using base class pointer
     virtual ~LogAppender();
 
@@ -166,6 +170,21 @@ private:
     std::list<LogAppender::ptr> appenders_;
 
 };
+
+//logger manager
+class LoggerManager{
+Singleton_Constructor(LoggerManager)
+public:
+    std::shared_ptr<Logger> get_root() const { return root_logger_; }
+    std::shared_ptr<Logger> get_logger(const std::string& name);
+    std::size_t get_logger_cnt() const { return loggers_.size(); }
+
+    bool del_logger(const std::string& name);
+private:
+    std::map<std::string, std::shared_ptr<Logger>> loggers_;
+    std::shared_ptr<Logger> root_logger_;
+};
+#define LoggerMgr Singleton<sylar::LoggerManager>::Instance()
 
 // log appender for stdout
 class StdoutLogAppender : public LogAppender{
