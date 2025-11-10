@@ -19,8 +19,6 @@ private:\
     T& operator=(const T&) = delete;\
     friend class Singleton<T>;
 
-
-
 }
 
 

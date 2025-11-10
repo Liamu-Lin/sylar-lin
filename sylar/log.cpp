@@ -107,9 +107,8 @@ public:
     } 
 };
 
-Logger::Logger(const std::string name, LogLevel::Level level)
-    :name_(name),
-    level_(level){
+Logger::Logger(const std::string name, LogLevel::Level level):
+    name_(name), level_(level){
     ;
 }
 
@@ -152,9 +151,10 @@ bool Logger::del_appender(LogAppender::ptr appender){
 
 //LoggerManager
 LoggerManager::LoggerManager(){
-    root_logger_.reset(new Logger("root"));
-    root_logger_->add_appender(std::shared_ptr<LogAppender>(new StdoutLogAppender));
-    loggers_["root"] = root_logger_;
+    root_.reset(new Logger("root"));
+    root_appender_.reset(new StdoutLogAppender);
+    root_->add_appender(root_appender_);
+    loggers_["root"] = root_;
 }
 
 std::shared_ptr<Logger> LoggerManager::get_logger(const std::string& name){
@@ -163,6 +163,7 @@ std::shared_ptr<Logger> LoggerManager::get_logger(const std::string& name){
         return ret->second;
 
     std::shared_ptr<Logger> logger(new Logger(name));
+    logger->add_appender(root_appender_);
     loggers_[name] = logger;
     return logger;
 }

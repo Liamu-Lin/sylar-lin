@@ -149,7 +149,6 @@ public:
 
     Logger(const std::string name, LogLevel::Level level = LogLevel::Level::DEBUG);
 
-    //only ouput logs whose level is higher than level_
     void log(LogLevel::Level level, LogEvent::ptr event);
     void deubg(LogEvent::ptr event);
     void info(LogEvent::ptr event);
@@ -160,8 +159,9 @@ public:
     void add_appender(LogAppender::ptr appender);
     bool del_appender(LogAppender::ptr appender);
 
-    LogLevel::Level get_level() const { return level_; }
     void set_level(LogLevel::Level level) { level_ = level; }
+
+    LogLevel::Level get_level() const { return level_; }
     std::string get_name() const { return name_; }
 
 private:
@@ -175,16 +175,17 @@ private:
 class LoggerManager{
 Singleton_Constructor(LoggerManager)
 public:
-    std::shared_ptr<Logger> get_root() const { return root_logger_; }
+    #define LoggerMgr Singleton<sylar::LoggerManager>::Instance()
+    std::shared_ptr<Logger> get_root() const { return root_; }
     std::shared_ptr<Logger> get_logger(const std::string& name);
     std::size_t get_logger_cnt() const { return loggers_.size(); }
 
     bool del_logger(const std::string& name);
 private:
     std::map<std::string, std::shared_ptr<Logger>> loggers_;
-    std::shared_ptr<Logger> root_logger_;
+    std::shared_ptr<Logger> root_;
+    std::shared_ptr<LogAppender> root_appender_;
 };
-#define LoggerMgr Singleton<sylar::LoggerManager>::Instance()
 
 // log appender for stdout
 class StdoutLogAppender : public LogAppender{
