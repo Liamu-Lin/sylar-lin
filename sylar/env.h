@@ -1,5 +1,5 @@
-#ifndef __SYLAR_ENV__
-#define __SYLAR_ENV__
+#ifndef __SYLAR_ENV_H__
+#define __SYLAR_ENV_H_
 
 #include "singleton.h"
 
@@ -28,8 +28,11 @@ public:
     bool set_env(const std::string& key, const std::string& value);
     std::string get_env(const std::string& key, const std::string& default_value = "") const;
 
-    const std::string& getExe() const { return exe_;}
-    const std::string& getCwd() const { return cwd_;}
+    const std::string& get_exe() const { return exe_;}
+    const std::string& get_cwd() const { return cwd_;}
+
+    std::string get_absolute_path(const std::string& path) const;
+
 private:
     std::map<std::string, std::string> args_;
     std::map<std::string, std::string> helps_;

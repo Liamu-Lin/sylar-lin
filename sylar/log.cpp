@@ -148,6 +148,9 @@ bool Logger::del_appender(LogAppender::ptr appender){
     }
     return false;
 }
+void Logger::clear_appenders(){
+    appenders_.clear();
+}
 
 //LoggerManager
 LoggerManager::LoggerManager(){

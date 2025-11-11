@@ -9,11 +9,12 @@ include_directories(./sylar)
 set(LIB_SRC
     sylar/log.cpp
     sylar/util.cpp
+    sylar/config.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
 
-add_executable(test tests/test.cpp)
+add_executable(test tests/test_config.cpp)
 add_dependencies(test sylar)
 target_link_libraries(test sylar)
 

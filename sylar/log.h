@@ -158,6 +158,7 @@ public:
 
     void add_appender(LogAppender::ptr appender);
     bool del_appender(LogAppender::ptr appender);
+    void clear_appenders();
 
     void set_level(LogLevel::Level level) { level_ = level; }
 
