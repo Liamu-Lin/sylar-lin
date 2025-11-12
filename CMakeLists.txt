@@ -16,7 +16,7 @@ add_library(sylar SHARED ${LIB_SRC})
 
 add_executable(test tests/test_config.cpp)
 add_dependencies(test sylar)
-target_link_libraries(test sylar)
+target_link_libraries(test sylar yaml-cpp)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

@@ -5,6 +5,7 @@
 #include "singleton.h"
 
 #include <boost/lexical_cast.hpp>
+#include <yaml-cpp/yaml.h>
 
 #include <string>
 #include <map>
@@ -27,6 +28,7 @@ public:
     virtual bool from_string(const std::string& str) = 0;
 
 private:
+    // lower-case name
     std::string name_;
     std::string description_;
 };
@@ -81,9 +83,16 @@ public:
     #define ConfigMgr Singleton<sylar::Config>::Instance()
     typedef std::shared_ptr<Config> ptr;
 
+    // search and create if not exists
     template<typename T>
     std::shared_ptr<ConfigVar<T>> look_up(const std::string& name, const T& default_value, 
         const std::string& description = ""){
+        // check name validity
+        if(name.find_first_not_of("abcdefghikjlmnopqrstuvwxyz._0123456789") != std::string::npos) {
+            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "Lookup name invalid " << name;
+            throw std::invalid_argument(name);
+        }
+        //search or create
         auto ptr = look_up<T>(name);
         if(ptr == nullptr){
             ptr.reset(new ConfigVar<T>(name, description, default_value));
@@ -91,28 +100,35 @@ public:
         }
         return ptr;
     }
+    // search only
     template<typename T>
     std::shared_ptr<ConfigVar<T>> look_up(const std::string& name){
         auto it = datas_.find(name);
+        std::shared_ptr<ConfigVar<T>> ptr = nullptr;
+        // exists
         if(it != datas_.end()){
-            auto ptr = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
+            ptr = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
             if(ptr){
                 SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name=" << name << " exists";
-                return ptr;
             }
             else{
                 SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "look_up name=" << name << " exists but type not match, "
                     << "real_type=" << it->second->get_type_name() << " req_type=" << typeid(T).name();
-                return nullptr;
             }
         }
-        if(name.find_first_not_of("abcdefghikjlmnopqrstuvwxyz._012345678") != std::string::npos) {
-            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "Lookup name invalid " << name;
-            throw std::invalid_argument(name);
-        }
-        SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name=" << name << " not exists";
-        return nullptr;
+        //not exists
+        else
+            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name=" << name << " not exists";
+        return ptr;
     }
+    // search only and return base class pointer
+    std::shared_ptr<ConfigVarBase> look_up_base(const std::string& name){
+        auto it = datas_.find(name);
+        return it == datas_.end() ? nullptr : it->second;
+    }
+
+    //load variables from YAML node
+    bool load_from_yaml(const YAML::Node& root);
 
 private:
     // var name to var
