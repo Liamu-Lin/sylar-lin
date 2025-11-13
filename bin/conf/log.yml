@@ -17,3 +17,10 @@ logs:
 system:
     port: 9999
     value: 12345
+
+int_vec:
+    - 1
+    - 2
+    - 3
+    - 4
+    - 5

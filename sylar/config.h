@@ -4,6 +4,8 @@
 #include "log.h"
 #include "singleton.h"
 
+#include <sstream>
+
 #include <boost/lexical_cast.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -11,6 +13,43 @@
 #include <map>
 
 namespace sylar{
+
+template<typename F, typename T>
+class Converter{
+public:
+    static T convert(const F& v){
+        return boost::lexical_cast<T>(v);
+    }
+};
+// partial specialization for YAML str -> vector<T>
+template<typename T>
+class Converter<std::string, std::vector<T>>{
+public:
+    static std::vector<T> convert(const std::string& v){
+        YAML::Node node = YAML::Load(v);
+        std::vector<T> vec;
+        std::stringstream ss;
+        for(size_t i = 0; i < node.size(); ++i){
+            ss.str("");
+            ss << node[i];
+            vec.push_back(Converter<std::string, T>::convert(ss.str()));
+        }
+        return vec;
+    }
+};
+// partial specialization for vector<T> -> YAML str
+template<typename T>
+class Converter<std::vector<T>, std::string>{
+public:
+    static std::string convert(const std::vector<T>& v){
+        std::stringstream ss;
+        YAML::Node node(YAML::NodeType::Sequence);
+        for(const auto& i : v)
+            node.push_back(YAML::Load(Converter<T, std::string>::convert(i)));
+        ss << node;
+        return ss.str();
+    }
+};
 
 class ConfigVarBase{
 public:
@@ -33,7 +72,8 @@ private:
     std::string description_;
 };
 
-template<typename T>
+template<typename T, typename FromStr = Converter<std::string, T>
+                   , typename ToStr = Converter<T, std::string>>
 class ConfigVar : public ConfigVarBase{
 public:
     typedef std::shared_ptr<ConfigVar> ptr;
@@ -52,7 +92,7 @@ public:
 
     std::string to_string() override{
         try{
-            return boost::lexical_cast<std::string>(value_);
+            return ToStr::convert(value_);
         } catch(...){
             SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "ConfigVar::to_string exception"
                 << " name=" << get_name() << " type=" << get_type_name();
@@ -61,7 +101,7 @@ public:
     }
     bool from_string(const std::string& str) override{
         try{
-            value_ = boost::lexical_cast<T>(str);
+            value_ = FromStr::convert(str);
             return true;
         } catch(...){
             SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "ConfigVar::from_string exception"

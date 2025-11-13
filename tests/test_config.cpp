@@ -11,6 +11,9 @@ sylar::ConfigVar<int>::ptr g_int_value_config =
 sylar::ConfigVar<float>::ptr g_float_value_config =
     sylar::ConfigMgr.look_up<float>("system.value", (float)10.2f, "system value");
 
+sylar::ConfigVar<std::vector<int>>::ptr g_int_vec_config =
+    sylar::ConfigMgr.look_up<std::vector<int>>("int_vec", std::vector<int>{3,2,1}, "int vector");
+
 void print_yaml(const YAML::Node& node, int level) {
     if(node.IsScalar()) {
         SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << std::string(level * 4, ' ')
@@ -40,16 +43,24 @@ void test_yaml(){
 }
 
 void test_config(){
-    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "Before:\n"
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "Before: "
         << "g_int_value_config = " << g_int_value_config->get_value()
-        << " g_float_value_config = " << g_float_value_config->get_value();
+        << " g_float_value_config = " << g_float_value_config->get_value()
+        << " g_int_vec_config = " << g_int_vec_config->to_string();
 
         YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/log.yml");
     sylar::ConfigMgr.load_from_yaml(root);
 
-    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "After:\n"
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "After: "
         << "g_int_value_config = " << g_int_value_config->get_value()
-        << " g_float_value_config = " << g_float_value_config->get_value();
+        << " g_float_value_config = " << g_float_value_config->get_value()
+        << " g_int_vec_config = " << g_int_vec_config->to_string();
+
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "g_int_vec_config get_value:";
+    for(auto& i : g_int_vec_config->get_value()){
+        SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << i;
+    }
+
 }
 
 int main(int argc, char** argv){
@@ -78,7 +89,7 @@ int main(int argc, char** argv){
         << "g_int_value_config = " << g_int_value_config->get_value()
         << " g_float_value_config = " << g_float_value_config->get_value();
 
-    test_yaml();
+    //test_yaml();
 
     test_config();
 
