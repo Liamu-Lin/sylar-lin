@@ -17,10 +17,24 @@ logs:
 system:
     port: 9999
     value: 12345
-
-int_vec:
-    - 1
-    - 2
-    - 3
-    - 4
-    - 5
+    int_vec:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+    int_lst: [6,7,8,9,10]
+    int_set: [11,12,13,14,15]
+    int_uset: [16,17,18,19,20]
+    int_map:
+      a: 21
+      b: 22
+      c: 23
+      d: 24
+      e: 25
+    int_umap:
+      v: 26
+      w: 27
+      x: 28
+      y: 29
+      z: 30
