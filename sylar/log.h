@@ -104,7 +104,7 @@ public:
         static bool is_legal_item(char c);
     };
 
-    LogFormatter(const std::string& pattern = "%d{%Y-%m-%d %H:%M:%S} [%p] [%c]%Tthread:%t %N%Tfiber:%F %f:%l%T%m%n");
+    LogFormatter(const std::string& pattern = "%d{%Y-%m-%d %H:%M:%S} [%p][%c] thread:%t %N fiber:%F %f:%l%T%m%n");
 
     //format the event to to specified format and output to os
     void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);

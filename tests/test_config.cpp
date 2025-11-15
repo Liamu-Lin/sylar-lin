@@ -5,6 +5,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#if 0
 sylar::ConfigVar<int>::ptr g_int_value_config =
     sylar::ConfigMgr.look_up("system.port", (int)8080, "system port");
 
@@ -58,30 +59,48 @@ void test_yaml(){
 }
 
 void test_config(){
-    #define LOG_VAR_IN_STR(var, prefix) \
-        SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << #prefix \
-        << " " << #var << " = " << var->to_string();
-    #define LOG_VAR_IN_VALUE(var, prefix) \
-        {   \
+    #define LOG_VAR_IN_STR(var, prefix) {\
+        if(var == nullptr) {\
+            SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "var " << #var << " is null"; \
+        } \
+        else {\
+            SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << #prefix \
+            << " " << #var << " = " << var->to_string(); \
+        } \
+    }
+    #define LOG_VAR_IN_VALUE(var, prefix) {\
+        if(var == nullptr) {\
+            SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "var " << #var << " is null"; \
+        } \
+        else {\
             auto v = var->get_value(); \
             for(auto& i : v){   \
                 SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << #prefix \
                 << " " << #var << " value = " << i; \
-            }   \
-        }
-    #define LOG_MAP_IN_STR(var, prefix) \
-        {\
+            } \
+        } \
+    }
+    #define LOG_MAP_IN_STR(var, prefix) {\
+        if(var == nullptr) {\
+            SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "var " << #var << " is null"; \
+        } \
+        else{ \
             SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << #prefix \
-            << " " << #var << " = " << var->to_string(); \
-        }
-    #define LOG_MAP_IN_VALUE(var, prefix) \
-        {   \
+                << " " << #var << " = " << var->to_string(); \
+        } \
+    }
+    #define LOG_MAP_IN_VALUE(var, prefix) {\
+        if(var == nullptr) {\
+            SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "var " << #var << " is null"; \
+        } \
+        else{ \
             auto v = var->get_value(); \
             for(auto& i : v){   \
                 SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << #prefix \
                 << " " << #var << " value = {" << i.first << " : " << i.second << "}"; \
             }   \
-        }
+        } \
+    }
 
     LOG_VAR_IN_STR(g_int_value_config, "Before");
     LOG_VAR_IN_STR(g_float_value_config, "Before");
@@ -120,6 +139,84 @@ void test_config(){
 
 }
 
+#endif
+
+
+class Person {
+public:
+    Person() {};
+    std::string m_name;
+    int m_age = 0;
+    bool m_sex = 0;
+    bool operator== (const Person& other) const {
+        return m_name == other.m_name && m_age == other.m_age && m_sex == other.m_sex;
+    }
+};
+namespace sylar {
+
+template<>
+class Converter<std::string, Person> {
+public:
+    static Person convert(const std::string& v) {
+        YAML::Node node = YAML::Load(v);
+        Person p;
+        p.m_name = node["name"].as<std::string>();
+        p.m_age = node["age"].as<int>();
+        p.m_sex = node["sex"].as<bool>();
+        return p;
+    }
+};
+template<>
+class Converter<Person, std::string> {
+public:
+    static std::string convert(const Person& p) {
+        YAML::Node node;
+        node["name"] = p.m_name;
+        node["age"] = p.m_age;
+        node["sex"] = p.m_sex;
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
+    }
+};
+
+}
+
+sylar::ConfigVar<Person>::ptr g_person =
+    sylar::ConfigMgr.look_up("class.person", Person(), "system person");
+
+sylar::ConfigVar<std::map<std::string, Person> >::ptr g_person_map =
+    sylar::ConfigMgr.look_up("class.map", std::map<std::string, Person>(), "system person");
+
+sylar::ConfigVar<std::map<std::string, std::vector<Person> > >::ptr g_person_vec_map =
+    sylar::ConfigMgr.look_up("class.vec_map", std::map<std::string, std::vector<Person> >(), "system person");
+
+void test_class() {
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "g_person "
+        << "before:\n" << g_person->to_string();
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "g_person_map "
+        << "before: size = " << g_person_map->get_value().size() << '\n' << g_person_map->to_string();
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "g_person_vec_map "
+        << "before: size = " << g_person_vec_map->get_value().size() << '\n' << g_person_vec_map->to_string();
+
+    g_person->add_listener("print", [](const Person& old_value, const Person& new_value){
+        SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG)
+            << "g_person value changed from \"" << old_value.m_name << "\"," << old_value.m_age << "," << old_value.m_sex
+            << " to \"" << new_value.m_name << "\"," << new_value.m_age << "," << new_value.m_sex;
+    });
+
+    YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/log.yml");
+    sylar::ConfigMgr.load_from_yaml(root);
+
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG)
+        << "after:\n" << g_person->to_string();
+    //XX_PM(g_person_map, "class.map after");
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "g_person_vec_map "
+        << "after: size = " << g_person_map->get_value().size() << '\n' << g_person_map->to_string();
+    SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "g_person_vec_map "
+        << "after: size = " << g_person_vec_map->get_value().size() << '\n' << g_person_vec_map->to_string();
+}
+
 int main(int argc, char** argv){
     // auto root = sylar::LoggerMgr.get_root();
     
@@ -148,7 +245,8 @@ int main(int argc, char** argv){
 
     //test_yaml();
 
-    test_config();
+    //test_config();
+    test_class();
 
     return 0;
 }

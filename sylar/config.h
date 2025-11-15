@@ -10,6 +10,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <string>
+#include <functional>
 #include <vector>
 #include <list>
 #include <map>
@@ -225,6 +226,7 @@ template<typename T, typename FromStr = Converter<std::string, T>
 class ConfigVar : public ConfigVarBase{
 public:
     typedef std::shared_ptr<ConfigVar> ptr;
+    typedef std::function<void(const T& old_value, const T& new_value)> on_change_cb;
 
     ConfigVar(const std::string& name, const std::string& description, const T& value):
         ConfigVarBase(name, description),
@@ -249,7 +251,7 @@ public:
     }
     bool from_string(const std::string& str) override{
         try{
-            value_ = FromStr::convert(str);
+            set_value(FromStr::convert(str));
             return true;
         } catch(...){
             SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "ConfigVar::from_string exception"
@@ -259,10 +261,31 @@ public:
     }
 
     T get_value() const { return value_; }
-    void set_value(const T& value) { value_ = value; }
+    void set_value(const T& value) {
+        if(value == value_)
+            return;
+        for(auto& f : cbs_)
+            f.second(value_, value);
+        value_ = value;
+    }
+
+    void add_listener(const std::string& key, on_change_cb cb){
+        cbs_[key] = cb;
+    }
+    void del_listener(const std::string& key){
+        cbs_.erase(key);
+    }
+    void clear_listeners(){
+        cbs_.clear();
+    }
+    on_change_cb get_listener(const std::string& key){
+        auto it = cbs_.find(key);
+        return it == cbs_.end() ? nullptr : it->second;
+    }
 
 private:
     T value_;
+    std::map<std::string, on_change_cb> cbs_;
 };
 
 class Config{
@@ -281,8 +304,22 @@ public:
             throw std::invalid_argument(name);
         }
         //search or create
-        auto ptr = look_up<T>(name);
-        if(ptr == nullptr){
+        auto it = datas_.find(name);
+        std::shared_ptr<ConfigVar<T>> ptr = nullptr;
+        if(it != datas_.end()){
+            ptr = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
+            if(ptr){
+                SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name = " << name << " exists";
+                return ptr;
+            }
+            else{
+                SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "look_up name = " << name << " exists but type not match, "
+                    << "real_type=" << it->second->get_type_name() << " req_type=" << typeid(T).name();
+                return nullptr;
+            }
+        }
+        else{
+            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name = " << name << " not exists, create it";
             ptr.reset(new ConfigVar<T>(name, description, default_value));
             datas_[name] = ptr;
         }
@@ -291,22 +328,28 @@ public:
     // search only
     template<typename T>
     std::shared_ptr<ConfigVar<T>> look_up(const std::string& name){
+        // check name validity
+        if(name.find_first_not_of("abcdefghikjlmnopqrstuvwxyz._0123456789") != std::string::npos) {
+            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "Lookup name invalid " << name;
+            throw std::invalid_argument(name);
+        }
+        //search
         auto it = datas_.find(name);
         std::shared_ptr<ConfigVar<T>> ptr = nullptr;
         // exists
         if(it != datas_.end()){
             ptr = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
             if(ptr){
-                SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name=" << name << " exists";
+                SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name = " << name << " exists";
             }
             else{
-                SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "look_up name=" << name << " exists but type not match, "
+                SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "look_up name = " << name << " exists but type not match, "
                     << "real_type=" << it->second->get_type_name() << " req_type=" << typeid(T).name();
             }
         }
         //not exists
         else
-            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name=" << name << " not exists";
+            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::INFO) << "look_up name = " << name << " not exists";
         return ptr;
     }
     // search only and return base class pointer
