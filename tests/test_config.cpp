@@ -5,7 +5,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#if 0
+#if 1
 sylar::ConfigVar<int>::ptr g_int_value_config =
     sylar::ConfigMgr.look_up("system.port", (int)8080, "system port");
 
@@ -54,28 +54,29 @@ void print_yaml(const YAML::Node& node, int level) {
 }
 
 void test_yaml(){
-    YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/log.yml");
+    YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/test.yml");
     print_yaml(root, 0);
 }
 
 void test_config(){
+    sylar::LoggerMgr.add_logger("test");
     #define LOG_VAR_IN_STR(var, prefix) {\
         if(var == nullptr) {\
-            SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "var " << #var << " is null"; \
+            SYLAR_LOG(sylar::LoggerMgr.get_logger("test"), sylar::LogLevel::Level::DEBUG) << "var " << #var << " is null"; \
         } \
         else {\
-            SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << #prefix \
+            SYLAR_LOG(sylar::LoggerMgr.get_logger("test"), sylar::LogLevel::Level::DEBUG) << #prefix \
             << " " << #var << " = " << var->to_string(); \
         } \
     }
     #define LOG_VAR_IN_VALUE(var, prefix) {\
         if(var == nullptr) {\
-            SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "var " << #var << " is null"; \
+            SYLAR_LOG(sylar::LoggerMgr.get_logger("test"), sylar::LogLevel::Level::DEBUG) << "var " << #var << " is null"; \
         } \
         else {\
             auto v = var->get_value(); \
             for(auto& i : v){   \
-                SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << #prefix \
+                SYLAR_LOG(sylar::LoggerMgr.get_logger("test"), sylar::LogLevel::Level::DEBUG) << #prefix \
                 << " " << #var << " value = " << i; \
             } \
         } \
@@ -118,7 +119,7 @@ void test_config(){
     LOG_MAP_IN_VALUE(g_int_map_config, "Before");
     LOG_MAP_IN_VALUE(g_int_umap_config, "Before");
 
-    YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/log.yml");
+    YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/test.yml");
     sylar::ConfigMgr.load_from_yaml(root);
 
     LOG_VAR_IN_STR(g_int_value_config, "After");
@@ -205,7 +206,7 @@ void test_class() {
             << " to \"" << new_value.m_name << "\"," << new_value.m_age << "," << new_value.m_sex;
     });
 
-    YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/log.yml");
+    YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/test.yml");
     sylar::ConfigMgr.load_from_yaml(root);
 
     SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG)
@@ -245,8 +246,8 @@ int main(int argc, char** argv){
 
     //test_yaml();
 
-    //test_config();
-    test_class();
+    test_config();
+    //test_class();
 
     return 0;
 }

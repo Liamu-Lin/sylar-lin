@@ -25,10 +25,10 @@
         sylar::LogEventWrap(logger, sylar::LogEvent::ptr(new sylar::LogEvent(__FILE__, __LINE__, \
                                 clock(), sylar::get_thread_id(), sylar::get_fiber_id(), time(0))), level).get_ss()
 
-
 namespace sylar{
 
 class Logger;
+class LoggerManager;
 
 class LogLevel{
 public:
@@ -64,7 +64,6 @@ public:
     std::stringstream& get_ss() { return ss_; }
 
     bool set_content(const std::string& fmt, ...);
-
 private:
     std::string file_name_;
     int32_t line_ = 0;
@@ -83,7 +82,6 @@ public:
     ~LogEventWrap();
 
     std::stringstream& get_ss();
-
 private:
     std::shared_ptr<Logger> logger_;
     std::shared_ptr<LogEvent> event_;
@@ -110,7 +108,6 @@ public:
     void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);
 
     bool is_legal_pattern() const { return legal_pattern_; }
-
 private:
     bool legal_pattern_;
     std::string pattern_;
@@ -136,7 +133,6 @@ public:
     LogFormatter::ptr get_formatter() const;
     void set_level(LogLevel::Level level) { level_ = level; }
     LogLevel::Level get_level() const { return level_; }
-
 protected:
     LogLevel::Level level_;    //output logs that meet this level
     LogFormatter::ptr formatter_;
@@ -146,11 +142,10 @@ protected:
 class Logger : public std::enable_shared_from_this<Logger>{
 public:
     typedef std::shared_ptr<Logger> ptr;
-
-    Logger(const std::string name, LogLevel::Level level = LogLevel::Level::DEBUG);
+    friend class LoggerManager;
 
     void log(LogLevel::Level level, LogEvent::ptr event);
-    void deubg(LogEvent::ptr event);
+    void debug(LogEvent::ptr event);
     void info(LogEvent::ptr event);
     void warn(LogEvent::ptr event);
     void error(LogEvent::ptr event);
@@ -164,12 +159,13 @@ public:
 
     LogLevel::Level get_level() const { return level_; }
     std::string get_name() const { return name_; }
-
 private:
+    Logger() = delete;
+    Logger(const Logger&) = delete;
+    Logger(const std::string& name, LogLevel::Level level = LogLevel::Level::DEBUG);
     std::string name_;
     LogLevel::Level level_;    //output logs that meet this level
     std::list<LogAppender::ptr> appenders_;
-
 };
 
 //logger manager
@@ -178,9 +174,11 @@ Singleton_Constructor(LoggerManager)
 public:
     #define LoggerMgr Singleton<sylar::LoggerManager>::Instance()
     std::shared_ptr<Logger> get_root() const { return root_; }
+    std::shared_ptr<LogAppender> get_root_appender() const { return root_appender_; }
     std::shared_ptr<Logger> get_logger(const std::string& name);
     std::size_t get_logger_cnt() const { return loggers_.size(); }
 
+    bool add_logger(const std::string& name, LogLevel::Level level =LogLevel::Level::DEBUG);
     bool del_logger(const std::string& name);
 private:
     std::map<std::string, std::shared_ptr<Logger>> loggers_;
@@ -194,7 +192,6 @@ public:
     typedef std::shared_ptr<StdoutLogAppender> ptr;
 
     void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
-
 private:
 
 };
@@ -210,7 +207,6 @@ public:
 
     //return true if reopen successfully
     bool reopen();
-
 private:
     std::string file_name_;
     std::ofstream file_ostream_;

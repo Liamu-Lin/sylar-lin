@@ -1,5 +1,7 @@
 #include "log.h"
 
+constexpr static sylar::LogLevel::Level ROOT_LEVEL = sylar::LogLevel::Level::DEBUG;
+
 namespace sylar{
 
 class StringFormatterItem : public LogFormatter::FormatterItem{
@@ -107,7 +109,7 @@ public:
     } 
 };
 
-Logger::Logger(const std::string name, LogLevel::Level level):
+Logger::Logger(const std::string& name, LogLevel::Level level):
     name_(name), level_(level){
     ;
 }
@@ -116,10 +118,14 @@ void Logger::log(LogLevel::Level level, LogEvent::ptr event){
     if(level < level_)
         return;
     auto self = shared_from_this();
-    for(auto& appender: appenders_)
-        appender->log(self, level, event);
+    if(appenders_.empty())
+        LoggerMgr.get_root_appender()->log(self, level, event);
+    else{
+        for(auto& appender: appenders_)
+            appender->log(self, level, event);
+    }
 }
-void Logger::deubg(LogEvent::ptr event){
+void Logger::debug(LogEvent::ptr event){
     log(LogLevel::Level::DEBUG, event);
 }
 void Logger::info(LogEvent::ptr event){
@@ -154,7 +160,7 @@ void Logger::clear_appenders(){
 
 //LoggerManager
 LoggerManager::LoggerManager(){
-    root_.reset(new Logger("root"));
+    root_.reset(new Logger("root", ROOT_LEVEL));
     root_appender_.reset(new StdoutLogAppender);
     root_->add_appender(root_appender_);
     loggers_["root"] = root_;
@@ -166,11 +172,17 @@ std::shared_ptr<Logger> LoggerManager::get_logger(const std::string& name){
         return ret->second;
 
     std::shared_ptr<Logger> logger(new Logger(name));
-    logger->add_appender(root_appender_);
     loggers_[name] = logger;
     return logger;
 }
 
+bool LoggerManager::add_logger(const std::string& name, sylar::LogLevel::Level level){
+    auto it = loggers_.find(name);
+    if(it != loggers_.end())
+        return false;
+    loggers_[name] = std::shared_ptr<Logger>(new Logger(name, level));
+    return true;
+}
 bool LoggerManager::del_logger(const std::string& name){
     if(name == "root")
         return false;
