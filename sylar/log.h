@@ -123,6 +123,7 @@ public:
     typedef std::shared_ptr<LogAppender> ptr;
 
     LogAppender();
+    LogAppender(LogLevel::Level level, const std::string& pattern = "");
     //safe to delete derived classes using base class pointer
     virtual ~LogAppender();
 
@@ -133,8 +134,11 @@ public:
     bool set_formatter(LogFormatter::ptr formatter);
     bool set_formatter(const std::string& pattern);
     LogFormatter::ptr get_formatter() const { return formatter_; }
+
     void set_level(LogLevel::Level level) { level_ = level; }
     LogLevel::Level get_level() const { return level_; }
+
+    virtual std::string to_YAML_string() = 0;
 protected:
     LogLevel::Level level_;    //output logs that meet this level
     LogFormatter::ptr formatter_;
@@ -161,6 +165,8 @@ public:
 
     LogLevel::Level get_level() const { return level_; }
     std::string get_name() const { return name_; }
+
+    std::string to_YAML_string();
 private:
     Logger() = delete;
     Logger(const Logger&) = delete;
@@ -182,6 +188,8 @@ public:
 
     bool add_logger(const std::string& name, LogLevel::Level level =LogLevel::Level::DEBUG);
     bool del_logger(const std::string& name);
+
+    std::string to_YAML_string();
 private:
     std::map<std::string, std::shared_ptr<Logger>> loggers_;
     std::shared_ptr<Logger> root_;
@@ -193,9 +201,14 @@ class StdoutLogAppender : public LogAppender{
 public:
     typedef std::shared_ptr<StdoutLogAppender> ptr;
 
-    void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
-private:
+    StdoutLogAppender() = default;
+    StdoutLogAppender(LogLevel::Level level, const std::string& pattern = "")
+        :LogAppender(level, pattern){
+    }
 
+    void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
+
+    std::string to_YAML_string() override;
 };
 
 // log appender for file
@@ -204,11 +217,13 @@ public:
     typedef std::shared_ptr<FileLogAppender> ptr;
 
     FileLogAppender(const std::string& file_name);
+    FileLogAppender(const std::string& file_name, LogLevel::Level level, const std::string& pattern = "");
 
     void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
 
-    //return true if reopen successfully
     bool reopen();
+
+    std::string to_YAML_string() override;
 private:
     std::string file_name_;
     std::ofstream file_ostream_;

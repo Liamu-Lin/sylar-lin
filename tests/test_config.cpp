@@ -221,28 +221,32 @@ void test_class() {
 
 void test_load_logger(){
 
-    auto root_logger = sylar::LoggerMgr.get_root();
-    SYLAR_LOG(root_logger, sylar::LogLevel::Level::DEBUG)
-        << "Before load logger config: DEBUG log message";
-    SYLAR_LOG(root_logger, sylar::LogLevel::Level::INFO)
-        << "Before load logger config: INFO log message";
+    // auto root_logger = sylar::LoggerMgr.get_root();
+    // SYLAR_LOG(root_logger, sylar::LogLevel::Level::DEBUG)
+    //     << "Before load logger config: DEBUG log message";
+    // SYLAR_LOG(root_logger, sylar::LogLevel::Level::INFO)
+    //     << "Before load logger config: INFO log message";
+    std::cout << sylar::LoggerMgr.to_YAML_string() << std::endl;
 
 
     YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/log.yml");
     sylar::ConfigMgr.load_from_yaml(root);
     
-    SYLAR_LOG(root_logger, sylar::LogLevel::Level::DEBUG)
-        << "After load logger config: DEBUG log message";
-    SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::DEBUG)
-        << "This is system logger: DEBUG log message";
-    SYLAR_LOG(root_logger, sylar::LogLevel::Level::INFO)
-        << "After load logger config: INFO log message";
-    SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::INFO)
-        << "This is system logger: INFO log message";
-    SYLAR_LOG(root_logger, sylar::LogLevel::Level::ERROR)
-        << "After load logger config: ERROR log message";
-    SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::ERROR)
-        << "This is system logger: ERROR log message";
+    std::cout << sylar::LoggerMgr.to_YAML_string() << std::endl;
+    auto system_log = sylar::LoggerMgr.get_logger("system");
+    SYLAR_LOG(system_log, sylar::LogLevel::Level::INFO) << "hello system" << std::endl;
+    // SYLAR_LOG(root_logger, sylar::LogLevel::Level::DEBUG)
+    //     << "After load logger config: DEBUG log message";
+    // SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::DEBUG)
+    //     << "This is system logger: DEBUG log message";
+    // SYLAR_LOG(root_logger, sylar::LogLevel::Level::INFO)
+    //     << "After load logger config: INFO log message";
+    // SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::INFO)
+    //     << "This is system logger: INFO log message";
+    // SYLAR_LOG(root_logger, sylar::LogLevel::Level::ERROR)
+    //     << "After load logger config: ERROR log message";
+    // SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::ERROR)
+    //     << "This is system logger: ERROR log message";
 }
 
 int main(int argc, char** argv){

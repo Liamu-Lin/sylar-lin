@@ -232,6 +232,8 @@ public:
     } 
 };
 
+
+//Logger
 Logger::Logger(const std::string& name, LogLevel::Level level):
     name_(name), level_(level){
     ;
@@ -264,7 +266,6 @@ void Logger::fatal(LogEvent::ptr event){
     log(LogLevel::Level::FATAL, event);
 }
 
-//not thread-safe now
 void Logger::add_appender(LogAppender::ptr appender){
     appenders_.push_back(appender);
 }
@@ -281,10 +282,24 @@ void Logger::clear_appenders(){
     appenders_.clear();
 }
 
+std::string Logger::to_YAML_string(){
+    YAML::Node node;
+    node["name"] = name_;
+    node["level"] = LogLevel::to_string(level_);
+    for(auto& appender : appenders_){
+        YAML::Node na;
+        na = YAML::Load(appender->to_YAML_string());
+        node["appenders"].push_back(na);
+    }
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
+}
+
 //LoggerManager
 LoggerManager::LoggerManager(){
     root_.reset(new Logger("root", ROOT_LEVEL));
-    root_appender_.reset(new StdoutLogAppender);
+    root_appender_.reset(new StdoutLogAppender(ROOT_LEVEL));
     root_->add_appender(root_appender_);
     loggers_["root"] = root_;
 }
@@ -315,6 +330,14 @@ bool LoggerManager::del_logger(const std::string& name){
     return loggers_.erase(name);
 }
 
+std::string LoggerManager::to_YAML_string(){
+    YAML::Node node;
+    for(auto& i : loggers_)
+        node.push_back(YAML::Load(i.second->to_YAML_string()));
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
+}
 
 //LogLevel
 const std::string LogLevel::to_string(Level level){
@@ -398,6 +421,10 @@ std::stringstream& LogEventWrap::get_ss(){
 LogAppender::LogAppender(){
     formatter_.reset(new LogFormatter);
 }
+LogAppender::LogAppender(LogLevel::Level level, const std::string& pattern)
+    :level_(level){
+    formatter_.reset(new LogFormatter(pattern));
+}
 LogAppender::~LogAppender(){
     ;
 }
@@ -426,12 +453,28 @@ void StdoutLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level leve
         formatter_->format(std::cout, logger, level, event);
 }
 
+std::string StdoutLogAppender::to_YAML_string() {
+    YAML::Node node;
+    node["type"] = "StdoutLogAppender";
+    node["level"] = LogLevel::to_string(level_);
+    if(formatter_)
+        node["formatter"] = formatter_->get_pattern();
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
+}
+
 
 //FileLogAppender
 FileLogAppender::FileLogAppender(const std::string& file_name)
     :file_name_(file_name){
     file_ostream_.open(file_name_);
 }
+FileLogAppender::FileLogAppender(const std::string& file_name, LogLevel::Level level, const std::string& pattern)
+        :LogAppender(level, pattern)
+        ,file_name_(file_name){
+        file_ostream_.open(file_name_);
+    }
 
 void FileLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) {
     if(level < level_)
@@ -445,6 +488,18 @@ bool FileLogAppender::reopen(){
         file_ostream_.close();
     file_ostream_.open(file_name_);
     return (bool)file_ostream_;
+}
+
+std::string FileLogAppender::to_YAML_string(){
+    YAML::Node node;
+    node["type"] = "FileLogAppender";
+    node["file"] = file_name_;
+    node["level"] = LogLevel::to_string(level_);
+    if(formatter_)
+        node["formatter"] = formatter_->get_pattern();
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
 }
 
 //LogFormatter

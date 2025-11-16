@@ -22,7 +22,7 @@ case 'm':   //message
 
 int main(){
     std::cout << "Start test log" << std::endl;
-    sylar::Logger::ptr logger(new sylar::Logger("TestLogger"));
+    auto logger = sylar::LoggerMgr.get_logger("TestLogger");
 
     sylar::LogAppender::ptr stdout_appender(new sylar::StdoutLogAppender);
     //sylar::LogAppender::ptr stdout_appender(new sylar::FileLogAppender("test.log"));
