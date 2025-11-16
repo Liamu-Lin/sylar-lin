@@ -38,7 +38,8 @@ public:
         INFO = 2,
         WARN = 3,
         ERROR = 4,
-        FATAL = 5
+        FATAL = 5,
+        UNUSED = 6
     };
     LogLevel() = delete;
     static const std::string to_string(Level level);
@@ -106,7 +107,7 @@ public:
 
     //format the event to to specified format and output to os
     void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);
-
+    std::string get_pattern() const { return pattern_; }
     bool is_legal_pattern() const { return legal_pattern_; }
 private:
     bool legal_pattern_;
@@ -129,8 +130,9 @@ public:
     //only ouput logs whose level is higher than level_
     virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) = 0;
 
-    void set_formatter(LogFormatter::ptr formatter);
-    LogFormatter::ptr get_formatter() const;
+    bool set_formatter(LogFormatter::ptr formatter);
+    bool set_formatter(const std::string& pattern);
+    LogFormatter::ptr get_formatter() const { return formatter_; }
     void set_level(LogLevel::Level level) { level_ = level; }
     LogLevel::Level get_level() const { return level_; }
 protected:

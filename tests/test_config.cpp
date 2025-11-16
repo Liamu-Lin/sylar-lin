@@ -5,7 +5,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#if 1
+#if 0
 sylar::ConfigVar<int>::ptr g_int_value_config =
     sylar::ConfigMgr.look_up("system.port", (int)8080, "system port");
 
@@ -142,7 +142,7 @@ void test_config(){
 
 #endif
 
-
+#if 0
 class Person {
 public:
     Person() {};
@@ -200,7 +200,7 @@ void test_class() {
     SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "g_person_vec_map "
         << "before: size = " << g_person_vec_map->get_value().size() << '\n' << g_person_vec_map->to_string();
 
-    g_person->add_listener("print", [](const Person& old_value, const Person& new_value){
+    g_person->add_listener([](const Person& old_value, const Person& new_value){
         SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG)
             << "g_person value changed from \"" << old_value.m_name << "\"," << old_value.m_age << "," << old_value.m_sex
             << " to \"" << new_value.m_name << "\"," << new_value.m_age << "," << new_value.m_sex;
@@ -216,6 +216,33 @@ void test_class() {
         << "after: size = " << g_person_map->get_value().size() << '\n' << g_person_map->to_string();
     SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::DEBUG) << "g_person_vec_map "
         << "after: size = " << g_person_vec_map->get_value().size() << '\n' << g_person_vec_map->to_string();
+}
+#endif
+
+void test_load_logger(){
+
+    auto root_logger = sylar::LoggerMgr.get_root();
+    SYLAR_LOG(root_logger, sylar::LogLevel::Level::DEBUG)
+        << "Before load logger config: DEBUG log message";
+    SYLAR_LOG(root_logger, sylar::LogLevel::Level::INFO)
+        << "Before load logger config: INFO log message";
+
+
+    YAML::Node root = YAML::LoadFile("/home/liamu/sylar-lin/bin/conf/log.yml");
+    sylar::ConfigMgr.load_from_yaml(root);
+    
+    SYLAR_LOG(root_logger, sylar::LogLevel::Level::DEBUG)
+        << "After load logger config: DEBUG log message";
+    SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::DEBUG)
+        << "This is system logger: DEBUG log message";
+    SYLAR_LOG(root_logger, sylar::LogLevel::Level::INFO)
+        << "After load logger config: INFO log message";
+    SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::INFO)
+        << "This is system logger: INFO log message";
+    SYLAR_LOG(root_logger, sylar::LogLevel::Level::ERROR)
+        << "After load logger config: ERROR log message";
+    SYLAR_LOG(sylar::LoggerMgr.get_logger("system"), sylar::LogLevel::Level::ERROR)
+        << "This is system logger: ERROR log message";
 }
 
 int main(int argc, char** argv){
@@ -246,8 +273,9 @@ int main(int argc, char** argv){
 
     //test_yaml();
 
-    test_config();
+    //test_config();
     //test_class();
+    test_load_logger();
 
     return 0;
 }

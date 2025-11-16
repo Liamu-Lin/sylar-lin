@@ -3,13 +3,13 @@ logs:
       level: info
       appenders:
           - type: FileLogAppender
-            file: /apps/logs/sylar/root.txt
+            file: /home/liamu/sylar-lin/bin/logfiles/root.txt
           - type: StdoutLogAppender
     - name: system
       level: info
       appenders:
           - type: FileLogAppender
-            formatter: "%d%T%p%T%m%n"
-            file: /apps/logs/sylar/system.txt
+            formatter: "%d [%p][%c]%T%m%n"
+            file: /home/liamu/sylar-lin/bin/logfiles/system.txt
           - type: StdoutLogAppender
-            formatter: "%d%T%p%T%m%n"
+            formatter: "%d [%p][%c]%T%m%n"

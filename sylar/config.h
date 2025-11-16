@@ -269,23 +269,25 @@ public:
         value_ = value;
     }
 
-    void add_listener(const std::string& key, on_change_cb cb){
-        cbs_[key] = cb;
+    uint64_t add_listener(on_change_cb cb){
+        static uint64_t s_fun_id = 0;
+        cbs_[++s_fun_id] = cb;
+        return s_fun_id;
     }
-    void del_listener(const std::string& key){
+    void del_listener(uint64_t key){
         cbs_.erase(key);
     }
     void clear_listeners(){
         cbs_.clear();
     }
-    on_change_cb get_listener(const std::string& key){
+    on_change_cb get_listener(uint64_t key){
         auto it = cbs_.find(key);
         return it == cbs_.end() ? nullptr : it->second;
     }
 
 private:
     T value_;
-    std::map<std::string, on_change_cb> cbs_;
+    std::map<uint64_t, on_change_cb> cbs_;
 };
 
 class Config{
