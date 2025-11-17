@@ -1,12 +1,13 @@
 #ifndef __SYLAR_UTIL_H__
 #define __SYLAR_UTIL_H__
 
-#include <thread>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/syscall.h>
 #include <stdint.h>
 
 namespace sylar{
 
-typedef std::thread::id pid_t;
 typedef uint32_t fid_t;
 
 pid_t get_thread_id();
