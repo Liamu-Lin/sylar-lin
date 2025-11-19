@@ -205,7 +205,7 @@ public:
 class ConfigVarBase{
 public:
     typedef std::shared_ptr<ConfigVarBase> ptr;
-
+    typedef std::shared_ptr<const ConfigVarBase> const_ptr;
     ConfigVarBase(const std::string& name, const std::string& description = "");
     virtual ~ConfigVarBase() = 0;
 
@@ -214,7 +214,7 @@ public:
     virtual std::string get_type_name() const = 0;
 
     //convert to/from string
-    virtual std::string to_string() = 0;
+    virtual std::string to_string() const = 0;
     virtual bool from_string(const std::string& str) = 0;
 
 private:
@@ -242,7 +242,7 @@ public:
         return typeid(T).name();
     }
 
-    std::string to_string() override{
+    std::string to_string() const override{
         try{
             RWMutex::RLock lock(value_mutex_);
             return ToStr::convert(value_);
@@ -300,7 +300,7 @@ public:
 private:
     T value_;
     std::map<uint64_t, on_change_cb> cbs_;
-    RWMutex value_mutex_;
+    mutable RWMutex value_mutex_;
     RWMutex cbs_mutex_;
 };
 
@@ -379,6 +379,7 @@ public:
 
     //load variables from YAML node
     bool load_from_yaml(const YAML::Node& root);
+    void visit(std::function<void(ConfigVarBase::const_ptr)> cb);
 private:
     // var name to var
     std::map<std::string, std::shared_ptr<ConfigVarBase>> datas_;

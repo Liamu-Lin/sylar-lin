@@ -11,5 +11,5 @@ logs:
           - type: FileLogAppender
             formatter: "%d [%p][%c]%T%m%n"
             file: /home/liamu/sylar-lin/bin/logfiles/system.txt
-          #- type: StdoutLogAppender
-          #  formatter: "%d [%p][%c]%T%m%n"
+          - type: StdoutLogAppender
+            formatter: "%d [%p][%c]%T%m%n"

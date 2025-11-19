@@ -35,7 +35,7 @@ void fun2(){
     else
         str = "##################################################";
     auto logger = sylar::LoggerMgr.get_logger("system");
-    for(int i = 0; i < 1000000; ++i){
+    for(int i = 0; i < 1000; ++i){
         SYLAR_LOG(logger, sylar::LogLevel::Level::INFO)
             << str;
     }
@@ -60,11 +60,23 @@ void test_thread(){
 
 }
 
+void test_visit(){
+    sylar::ConfigMgr.visit([](sylar::ConfigVarBase::const_ptr var){
+        SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::INFO)
+            << "name=" << var->get_name()
+            << " description=" << var->get_description()
+            << " type=" << var->get_type_name()
+            << " value=" << var->to_string();
+    });
+}
+
 int main(){
 
     test_thread();
 
     std::cout << "global_count = " << global_count << std::endl;
+
+    test_visit();
 
     return 0;
 }

@@ -14,6 +14,8 @@ ConfigVarBase::~ConfigVarBase() {
     ;
 }
 
+
+//config
 Config::Config(){
     ;
 }
@@ -58,6 +60,13 @@ bool Config::load_from_yaml(const YAML::Node& root){
 
     return true;
 }
+
+void Config::visit(std::function<void(ConfigVarBase::const_ptr)> cb){
+    RWMutex::RLock lock(datas_mutex_);
+    for(auto& it : datas_)
+        cb(it.second);
+}
+
 
 
 }

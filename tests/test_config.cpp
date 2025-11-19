@@ -5,7 +5,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#if 0
+#if 1
 sylar::ConfigVar<int>::ptr g_int_value_config =
     sylar::ConfigMgr.look_up("system.port", (int)8080, "system port");
 
@@ -142,7 +142,7 @@ void test_config(){
 
 #endif
 
-#if 0
+#if 1
 class Person {
 public:
     Person() {};
@@ -249,6 +249,17 @@ void test_load_logger(){
     //     << "This is system logger: ERROR log message";
 }
 
+void test_visit(){
+    std::cout << "test_visit" << std::endl;
+    sylar::ConfigMgr.visit([](sylar::ConfigVarBase::const_ptr var){
+        SYLAR_LOG(sylar::LoggerMgr.get_root(), sylar::LogLevel::Level::INFO)
+            << "name=" << var->get_name()
+            << " description=" << var->get_description()
+            << " type=" << var->get_type_name()
+            << " value=" << var->to_string();
+    });
+}
+
 int main(int argc, char** argv){
     // auto root = sylar::LoggerMgr.get_root();
     
@@ -277,9 +288,11 @@ int main(int argc, char** argv){
 
     //test_yaml();
 
-    //test_config();
+    test_config();
     //test_class();
-    test_load_logger();
+    //test_load_logger();
+
+    test_visit();
 
     return 0;
 }
