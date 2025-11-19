@@ -2,9 +2,15 @@
 #define __SYLAR_UTIL_H__
 
 #include <pthread.h>
-#include <unistd.h>
 #include <sys/syscall.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <stdint.h>
+#include <unistd.h>
+
+#include <iostream>
+#include <fstream>
+#include <string>
 
 namespace sylar{
 
@@ -16,7 +22,15 @@ fid_t get_fiber_id();
 
 
 
-
+namespace FSUtil{
+    bool open_for_read(::std::ifstream& ifs, const ::std::string& file_name, 
+        ::std::ios_base::openmode mode = ::std::ios_base::in);
+    bool open_for_write(::std::ofstream& ofs, const ::std::string& file_name, 
+        ::std::ios_base::openmode mode = ::std::ios_base::out);
+    bool file_or_dir_exists(const std::string& path);
+    bool make_dir(const std::string& path);
+    std::string get_directory(const std::string& path);
+}
 
 
 }

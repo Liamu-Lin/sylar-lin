@@ -18,6 +18,7 @@
 
 #include "util.h"
 #include "singleton.h"
+#include "mutex.h"
 
 
 #define SYLAR_LOG(logger, level) \
@@ -50,6 +51,7 @@ public:
 class LogEvent{
 public:
     typedef std::shared_ptr<LogEvent> ptr;
+    typedef SpinLock Mutex;
 
     LogEvent(const std::string& file_name, int32_t line, uint32_t elapse,
              pid_t thread_id, fid_t fiber_id, uint64_t time);
@@ -60,9 +62,9 @@ public:
     uint64_t get_time() const { return time_; }
     uint32_t get_fiber_id() const { return fiber_id_; }
     const std::thread::id& get_thread_id() const { return thread_id_; }
-    std::string get_content() const { return ss_.str(); }
     std::string get_thread_name() const { return thread_name_; }
     std::stringstream& get_ss() { return ss_; }
+    std::string get_content();
 
     bool set_content(const std::string& fmt, ...);
 private:
@@ -74,6 +76,7 @@ private:
     uint64_t time_ = 0;     //time when the LogEvent was recorded
     std::stringstream ss_;
     std::string thread_name_;
+    Mutex ss_mutex_;
 };
 
 //log event wrap
@@ -93,6 +96,7 @@ private:
 class LogFormatter{
 public:
     typedef std::shared_ptr<LogFormatter> ptr;
+    typedef SpinLock Mutex;
     class FormatterItem{
     public:
         typedef std::shared_ptr<FormatterItem> ptr;
@@ -110,17 +114,19 @@ public:
     std::string get_pattern() const { return pattern_; }
     bool is_legal_pattern() const { return legal_pattern_; }
 private:
+    bool init_items();
+private:
     bool legal_pattern_;
     std::string pattern_;
     std::vector<FormatterItem::ptr> items_;
-
-    bool init_items();
+    Mutex items_mutex_;
 };
 
 // log output location
 class LogAppender{
 public:
     typedef std::shared_ptr<LogAppender> ptr;
+    typedef SpinLock Mutex;
 
     LogAppender();
     LogAppender(LogLevel::Level level, const std::string& pattern = "");
@@ -133,7 +139,7 @@ public:
 
     bool set_formatter(LogFormatter::ptr formatter);
     bool set_formatter(const std::string& pattern);
-    LogFormatter::ptr get_formatter() const { return formatter_; }
+    LogFormatter::ptr get_formatter();
 
     void set_level(LogLevel::Level level) { level_ = level; }
     LogLevel::Level get_level() const { return level_; }
@@ -142,12 +148,14 @@ public:
 protected:
     LogLevel::Level level_;    //output logs that meet this level
     LogFormatter::ptr formatter_;
+    Mutex formatter_mutex_;
 };
 
 // log outputter
 class Logger : public std::enable_shared_from_this<Logger>{
 public:
     typedef std::shared_ptr<Logger> ptr;
+    typedef SpinLock Mutex;
     friend class LoggerManager;
 
     void log(LogLevel::Level level, LogEvent::ptr event);
@@ -174,12 +182,14 @@ private:
     std::string name_;
     LogLevel::Level level_;    //output logs that meet this level
     std::list<LogAppender::ptr> appenders_;
+    Mutex appenders_mutex_;
 };
 
 //logger manager
 class LoggerManager{
 Singleton_Constructor(LoggerManager)
 public:
+    typedef SpinLock Mutex;
     #define LoggerMgr Singleton<sylar::LoggerManager>::Instance()
     std::shared_ptr<Logger> get_root() const { return root_; }
     std::shared_ptr<LogAppender> get_root_appender() const { return root_appender_; }
@@ -191,9 +201,10 @@ public:
 
     std::string to_YAML_string();
 private:
-    std::map<std::string, std::shared_ptr<Logger>> loggers_;
     std::shared_ptr<Logger> root_;
     std::shared_ptr<LogAppender> root_appender_;
+    std::map<std::string, std::shared_ptr<Logger>> loggers_;
+    Mutex loggers_mutex_;
 };
 
 // log appender for stdout
@@ -202,9 +213,7 @@ public:
     typedef std::shared_ptr<StdoutLogAppender> ptr;
 
     StdoutLogAppender() = default;
-    StdoutLogAppender(LogLevel::Level level, const std::string& pattern = "")
-        :LogAppender(level, pattern){
-    }
+    StdoutLogAppender(LogLevel::Level level, const std::string& pattern = ""):LogAppender(level, pattern){}
 
     void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
 
@@ -215,6 +224,7 @@ public:
 class FileLogAppender : public LogAppender{
 public:
     typedef std::shared_ptr<FileLogAppender> ptr;
+    typedef SpinLock Mutex;
 
     FileLogAppender(const std::string& file_name);
     FileLogAppender(const std::string& file_name, LogLevel::Level level, const std::string& pattern = "");
@@ -226,7 +236,9 @@ public:
     std::string to_YAML_string() override;
 private:
     std::string file_name_;
-    std::ofstream file_ostream_;
+    std::ofstream ofstream_;
+    u_int64_t last_time_ = 0;
+    Mutex ofs_mutex_;
 };
 
 

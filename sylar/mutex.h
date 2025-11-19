@@ -1,6 +1,8 @@
 #ifndef __SYLAR_MUTEX_H__
 #define __SYLAR_MUTEX_H__
 
+#include "noncopyable.h"
+
 #include <pthread.h>
 #include <semaphore.h>
 
@@ -60,7 +62,7 @@ private:
     T& mutex_;
 };
 
-class Mutex{
+class Mutex : public Noncopyable{
 public:
     typedef LockGuard<Mutex> Lock;
 
@@ -81,7 +83,7 @@ private:
     pthread_mutex_t mutex_;
 };
 
-class RWMutex{
+class RWMutex : public Noncopyable{
 public:
     typedef ReadLockGuard<RWMutex> RLock;
     typedef WriteLockGuard<RWMutex> WLock;
@@ -104,7 +106,24 @@ private:
     pthread_rwlock_t rw_mutex_;
 };
 
-
+class SpinLock : public Noncopyable{
+public:
+    typedef LockGuard<SpinLock> Lock;
+    SpinLock(){
+        pthread_spin_init(&spin_mutex_, 0);
+    }
+    ~SpinLock(){
+        pthread_spin_destroy(&spin_mutex_);
+    }
+    int lock(){
+        return pthread_spin_lock(&spin_mutex_);
+    }
+    int unlock(){
+        return pthread_spin_unlock(&spin_mutex_);
+    }
+private:
+    pthread_spinlock_t spin_mutex_;
+};
 
 }
 

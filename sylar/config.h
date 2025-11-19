@@ -2,14 +2,16 @@
 #define __SYLAR_CONFIG_H__
 
 #include "log.h"
+#include "mutex.h"
 #include "singleton.h"
 
 #include <sstream>
+#include <string>
+#include <exception>
 
 #include <boost/lexical_cast.hpp>
 #include <yaml-cpp/yaml.h>
 
-#include <string>
 #include <functional>
 #include <vector>
 #include <list>
@@ -242,10 +244,11 @@ public:
 
     std::string to_string() override{
         try{
+            RWMutex::RLock lock(value_mutex_);
             return ToStr::convert(value_);
-        } catch(...){
-            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "ConfigVar::to_string exception"
-                << " name=" << get_name() << " type=" << get_type_name();
+        } catch(std::exception& e){
+            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "ConfigVar::to_string exception: "
+                << e.what() << " name=" << get_name() << " type=" << get_type_name();
         }
         return "";
     }
@@ -253,34 +256,43 @@ public:
         try{
             set_value(FromStr::convert(str));
             return true;
-        } catch(...){
-            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "ConfigVar::from_string exception"
-                << " name=" << get_name() << " type=" << get_type_name() << " str=" << str;
+        } catch(std::exception& e){
+            SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "ConfigVar::from_string exception: "
+                << e.what() << " name=" << get_name() << " type=" << get_type_name() << " str=" << str;
         }
         return false;
     }
 
     T get_value() const { return value_; }
     void set_value(const T& value) {
-        if(value == value_)
-            return;
-        for(auto& f : cbs_)
-            f.second(value_, value);
+        {
+            RWMutex::RLock value_lock(value_mutex_);
+            if(value == value_)
+                return;
+            RWMutex::RLock cbs_lock(cbs_mutex_);
+            for(auto& f : cbs_)
+                f.second(value_, value);
+        }
+        RWMutex::WLock value_lock(value_mutex_);
         value_ = value;
     }
 
     uint64_t add_listener(on_change_cb cb){
         static uint64_t s_fun_id = 0;
+        RWMutex::WLock lock(cbs_mutex_);
         cbs_[++s_fun_id] = cb;
         return s_fun_id;
     }
     void del_listener(uint64_t key){
+        RWMutex::WLock lock(cbs_mutex_);
         cbs_.erase(key);
     }
     void clear_listeners(){
+        RWMutex::WLock lock(cbs_mutex_);
         cbs_.clear();
     }
     on_change_cb get_listener(uint64_t key){
+        RWMutex::RLock lock(cbs_mutex_);
         auto it = cbs_.find(key);
         return it == cbs_.end() ? nullptr : it->second;
     }
@@ -288,6 +300,8 @@ public:
 private:
     T value_;
     std::map<uint64_t, on_change_cb> cbs_;
+    RWMutex value_mutex_;
+    RWMutex cbs_mutex_;
 };
 
 class Config{
@@ -305,6 +319,7 @@ public:
             SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "Lookup name invalid " << name;
             throw std::invalid_argument(name);
         }
+        RWMutex::WLock lock(datas_mutex_);
         //search or create
         auto it = datas_.find(name);
         std::shared_ptr<ConfigVar<T>> ptr = nullptr;
@@ -335,6 +350,7 @@ public:
             SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "Lookup name invalid " << name;
             throw std::invalid_argument(name);
         }
+        RWMutex::RLock lock(datas_mutex_);
         //search
         auto it = datas_.find(name);
         std::shared_ptr<ConfigVar<T>> ptr = nullptr;
@@ -356,16 +372,17 @@ public:
     }
     // search only and return base class pointer
     std::shared_ptr<ConfigVarBase> look_up_base(const std::string& name){
+        RWMutex::RLock lock(datas_mutex_);
         auto it = datas_.find(name);
         return it == datas_.end() ? nullptr : it->second;
     }
 
     //load variables from YAML node
     bool load_from_yaml(const YAML::Node& root);
-
 private:
     // var name to var
     std::map<std::string, std::shared_ptr<ConfigVarBase>> datas_;
+    RWMutex datas_mutex_;
 };
 
 
