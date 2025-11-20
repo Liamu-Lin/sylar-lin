@@ -5,12 +5,17 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <execinfo.h>
+
 #include <stdint.h>
 #include <unistd.h>
 
+#include <memory>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <string>
+#include <vector>
 
 namespace sylar{
 
@@ -20,6 +25,9 @@ pid_t get_thread_id();
 //TODO
 fid_t get_fiber_id();
 
+
+void backtrace(std::vector<std::string>& buffer, int size, int skip = 0);
+std::string backtrace_symbols(int size, int skip = 0, const std::string& prefix = "");
 
 
 namespace FSUtil{

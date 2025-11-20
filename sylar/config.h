@@ -263,7 +263,10 @@ public:
         return false;
     }
 
-    T get_value() const { return value_; }
+    T get_value() const {
+        RWMutex::WLock lock(value_mutex_);    
+        return value_;
+    }
     void set_value(const T& value) {
         {
             RWMutex::RLock value_lock(value_mutex_);
@@ -291,7 +294,7 @@ public:
         RWMutex::WLock lock(cbs_mutex_);
         cbs_.clear();
     }
-    on_change_cb get_listener(uint64_t key){
+    on_change_cb get_listener(uint64_t key) const {
         RWMutex::RLock lock(cbs_mutex_);
         auto it = cbs_.find(key);
         return it == cbs_.end() ? nullptr : it->second;
@@ -301,7 +304,7 @@ private:
     T value_;
     std::map<uint64_t, on_change_cb> cbs_;
     mutable RWMutex value_mutex_;
-    RWMutex cbs_mutex_;
+    mutable RWMutex cbs_mutex_;
 };
 
 class Config{
@@ -344,7 +347,7 @@ public:
     }
     // search only
     template<typename T>
-    std::shared_ptr<ConfigVar<T>> look_up(const std::string& name){
+    std::shared_ptr<ConfigVar<T>> look_up(const std::string& name) const {
         // check name validity
         if(name.find_first_not_of("abcdefghikjlmnopqrstuvwxyz._0123456789") != std::string::npos) {
             SYLAR_LOG(LoggerMgr.get_root(), LogLevel::Level::ERROR) << "Lookup name invalid " << name;
@@ -371,7 +374,7 @@ public:
         return ptr;
     }
     // search only and return base class pointer
-    std::shared_ptr<ConfigVarBase> look_up_base(const std::string& name){
+    std::shared_ptr<ConfigVarBase> look_up_base(const std::string& name) const {
         RWMutex::RLock lock(datas_mutex_);
         auto it = datas_.find(name);
         return it == datas_.end() ? nullptr : it->second;
@@ -383,7 +386,7 @@ public:
 private:
     // var name to var
     std::map<std::string, std::shared_ptr<ConfigVarBase>> datas_;
-    RWMutex datas_mutex_;
+    mutable RWMutex datas_mutex_;
 };
 
 

@@ -64,8 +64,8 @@ public:
     const std::thread::id& get_thread_id() const { return thread_id_; }
     std::string get_thread_name() const { return thread_name_; }
     std::stringstream& get_ss() { return ss_; }
-    std::string get_content();
 
+    std::string get_content() const;
     bool set_content(const std::string& fmt, ...);
 private:
     std::string file_name_;
@@ -76,7 +76,7 @@ private:
     uint64_t time_ = 0;     //time when the LogEvent was recorded
     std::stringstream ss_;
     std::string thread_name_;
-    Mutex ss_mutex_;
+    mutable Mutex ss_mutex_;
 };
 
 //log event wrap
@@ -119,7 +119,7 @@ private:
     bool legal_pattern_;
     std::string pattern_;
     std::vector<FormatterItem::ptr> items_;
-    Mutex items_mutex_;
+    mutable Mutex items_mutex_;
 };
 
 // log output location
@@ -139,16 +139,16 @@ public:
 
     bool set_formatter(LogFormatter::ptr formatter);
     bool set_formatter(const std::string& pattern);
-    LogFormatter::ptr get_formatter();
+    LogFormatter::ptr get_formatter() const;
 
     void set_level(LogLevel::Level level) { level_ = level; }
     LogLevel::Level get_level() const { return level_; }
 
-    virtual std::string to_YAML_string() = 0;
+    virtual std::string to_YAML_string() const = 0;
 protected:
     LogLevel::Level level_;    //output logs that meet this level
     LogFormatter::ptr formatter_;
-    Mutex formatter_mutex_;
+    mutable Mutex formatter_mutex_;
 };
 
 // log outputter
@@ -174,7 +174,7 @@ public:
     LogLevel::Level get_level() const { return level_; }
     std::string get_name() const { return name_; }
 
-    std::string to_YAML_string();
+    std::string to_YAML_string() const;
 private:
     Logger() = delete;
     Logger(const Logger&) = delete;
@@ -182,7 +182,7 @@ private:
     std::string name_;
     LogLevel::Level level_;    //output logs that meet this level
     std::list<LogAppender::ptr> appenders_;
-    Mutex appenders_mutex_;
+    mutable Mutex appenders_mutex_;
 };
 
 //logger manager
@@ -199,12 +199,12 @@ public:
     bool add_logger(const std::string& name, LogLevel::Level level =LogLevel::Level::DEBUG);
     bool del_logger(const std::string& name);
 
-    std::string to_YAML_string();
+    std::string to_YAML_string() const;
 private:
     std::shared_ptr<Logger> root_;
     std::shared_ptr<LogAppender> root_appender_;
     std::map<std::string, std::shared_ptr<Logger>> loggers_;
-    Mutex loggers_mutex_;
+    mutable Mutex loggers_mutex_;
 };
 
 // log appender for stdout
@@ -217,7 +217,7 @@ public:
 
     void log(Logger::ptr logger, LogLevel::Level level, LogEvent::ptr event) override;
 
-    std::string to_YAML_string() override;
+    std::string to_YAML_string() const override;
 };
 
 // log appender for file
@@ -233,12 +233,12 @@ public:
 
     bool reopen();
 
-    std::string to_YAML_string() override;
+    std::string to_YAML_string() const override;
 private:
     std::string file_name_;
     std::ofstream ofstream_;
     u_int64_t last_time_ = 0;
-    Mutex ofs_mutex_;
+    mutable Mutex ofs_mutex_;
 };
 
 

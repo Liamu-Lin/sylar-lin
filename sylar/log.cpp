@@ -289,7 +289,7 @@ void Logger::clear_appenders(){
     appenders_.clear();
 }
 
-std::string Logger::to_YAML_string(){
+std::string Logger::to_YAML_string() const {
     YAML::Node node;
     node["name"] = name_;
     node["level"] = LogLevel::to_string(level_);
@@ -343,7 +343,7 @@ bool LoggerManager::del_logger(const std::string& name){
     return loggers_.erase(name);
 }
 
-std::string LoggerManager::to_YAML_string(){
+std::string LoggerManager::to_YAML_string() const {
     YAML::Node node;
     {
         Mutex::Lock lock(loggers_mutex_);
@@ -404,7 +404,7 @@ LogEvent::LogEvent(const std::string& file_name, int32_t line, uint32_t elapse,
         //thread_name_ = sylar::Thread::GetName();
 }
 
-std::string LogEvent::get_content(){
+std::string LogEvent::get_content() const {
     Mutex::Lock lock(ss_mutex_);
     return ss_.str();
 }
@@ -466,7 +466,7 @@ bool LogAppender::set_formatter(const std::string& pattern){
     return set_formatter(formatter);
 }
 
-LogFormatter::ptr LogAppender::get_formatter(){
+LogFormatter::ptr LogAppender::get_formatter() const {
     Mutex::Lock lock(formatter_mutex_);
     return formatter_;
 }
@@ -480,7 +480,7 @@ void StdoutLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level leve
     formatter_->format(std::cout, logger, level, event);
 }
 
-std::string StdoutLogAppender::to_YAML_string() {
+std::string StdoutLogAppender::to_YAML_string() const {
     YAML::Node node;
     node["type"] = "StdoutLogAppender";
     node["level"] = LogLevel::to_string(level_);
@@ -529,7 +529,7 @@ bool FileLogAppender::reopen(){
     return (bool)ofstream_;
 }
 
-std::string FileLogAppender::to_YAML_string(){
+std::string FileLogAppender::to_YAML_string() const {
     YAML::Node node;
     node["type"] = "FileLogAppender";
     node["file"] = file_name_;

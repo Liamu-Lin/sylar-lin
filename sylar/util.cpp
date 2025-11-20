@@ -12,6 +12,28 @@ fid_t get_fiber_id(){
 }
 
 
+void backtrace(std::vector<std::string>& buffer, int size, int skip){
+    buffer.clear();
+    void** buf = (void**)malloc(sizeof(void*) * size);
+    int nptrs = ::backtrace(buf, size);
+    char** strings = ::backtrace_symbols(buf, nptrs);
+    free(buf);
+    if(strings != nullptr){
+        for(int i = skip; i < nptrs; ++i)
+            buffer.push_back(strings[i]);
+        free(strings);
+    }
+}
+std::string backtrace_symbols(int size, int skip, const std::string& prefix){
+    std::vector<std::string> bt;
+    backtrace(bt, size, skip);
+    std::stringstream ss;
+    for(size_t i = 0; i < bt.size(); ++i){
+        ss << prefix << bt[i] << std::endl;
+    }
+    return ss.str();
+}
+
 
 namespace FSUtil{
     bool open_for_read(::std::ifstream& ifs, const ::std::string& file_name, ::std::ios_base::openmode mode){
@@ -19,11 +41,12 @@ namespace FSUtil{
         return (bool)ifs;
     }
     bool open_for_write(::std::ofstream& ofs, const ::std::string& file_name, ::std::ios_base::openmode mode){
-        if(file_or_dir_exists(file_name) == false){
-            std::string dir = get_directory(file_name);
-            if(make_dir(dir) == false)
-                return false;
-        }
+        ofs.open(file_name, mode);
+        if((bool)ofs)
+            return true;
+        
+        std::string dir = get_directory(file_name);
+        make_dir(dir);
         ofs.open(file_name, mode);
         return (bool)ofs;
     }
@@ -36,11 +59,13 @@ namespace FSUtil{
         if(access(path.c_str(), F_OK) == 0)
             return true;
         std::string tmp = path;
-        size_t pos = tmp.find('/', 0);
+        size_t pos = tmp.find('/', 1);
         while(pos != tmp.npos){
             tmp[pos] = '\0';
-            if(mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0)
-                return false;
+            if(file_or_dir_exists(tmp) == false){
+                if(mkdir(tmp.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) != 0)
+                    return false;
+            }
             tmp[pos] = '/';
             pos = tmp.find('/', pos + 1);
         }

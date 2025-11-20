@@ -1,0 +1,10 @@
+*.log
+*.logs
+*.exe
+
+.vscode
+
+build/*
+lib/*
+bin/*
+!bin/conf

@@ -35,7 +35,7 @@ void fun2(){
     else
         str = "##################################################";
     auto logger = sylar::LoggerMgr.get_logger("system");
-    for(int i = 0; i < 1000; ++i){
+    for(int i = 0; i < 1; ++i){
         SYLAR_LOG(logger, sylar::LogLevel::Level::INFO)
             << str;
     }
@@ -76,7 +76,7 @@ int main(){
 
     std::cout << "global_count = " << global_count << std::endl;
 
-    test_visit();
+    //test_visit();
 
     return 0;
 }
