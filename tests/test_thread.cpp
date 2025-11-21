@@ -35,10 +35,11 @@ void fun2(){
     else
         str = "##################################################";
     auto logger = sylar::LoggerMgr.get_logger("system");
-    for(int i = 0; i < 1; ++i){
+    for(int i = 0; i < 5; ++i){
         SYLAR_LOG(logger, sylar::LogLevel::Level::INFO)
             << str;
     }
+    sleep(100);
 }
 
 void test_thread(){
@@ -54,6 +55,9 @@ void test_thread(){
         sylar::Thread::ptr thr(new sylar::Thread(&fun2, "test_thread_" + std::to_string(i+10)));
         thrs.push_back(thr);
     }
+
+    sylar::Thread::set_name("main_thread");
+    fun();
 
     for(int i = 0; i < 15; ++i)
         thrs[i]->join();
@@ -76,7 +80,7 @@ int main(){
 
     std::cout << "global_count = " << global_count << std::endl;
 
-    //test_visit();
+    test_visit();
 
     return 0;
 }

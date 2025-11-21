@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 project(sylar)
 
 include (cmake/utils.cmake)
@@ -16,6 +16,7 @@ set(LIB_SRC
     sylar/config.cpp
     sylar/thread.cpp
     sylar/mutex.cpp
+    sylar/fiber.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -47,6 +48,11 @@ add_executable(test_util tests/test_util.cpp)
 force_redefine_file_macro_for_sources(test_util)
 add_dependencies(test_util sylar)
 target_link_libraries(test_util ${LIBS})
+
+add_executable(test_fiber tests/test_fiber.cpp)
+force_redefine_file_macro_for_sources(test_fiber)
+add_dependencies(test_fiber sylar)
+target_link_libraries(test_fiber ${LIBS})
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
