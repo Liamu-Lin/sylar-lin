@@ -2,22 +2,30 @@
 #define __SYLAR_FIBER_H__
 
 #include <ucontext.h>
+#include <stdint.h>
+#include <string.h>
 
 #include <memory>
 #include <functional>
+#include <string>
 #include <vector>
 #include <stack>
+
+#include "macro.h"
 
 #define SYLAR_FIBER_DEFAULT_STACK_SIZE (128 * 1024)     // 128KB
 
 #define SYLAR_FIBER_MAX_CALL_STACK_DEPTH  128
 
-
 namespace sylar{
-
 class Fiber;
+class FiberContext;
+
+//TODO: use template for func args
+typedef void (*fiber_func)(void*);
 
 enum class FiberState : int{
+    INITING,
     READY,
     RUNNING,
     SUSPENDED,
@@ -26,13 +34,16 @@ enum class FiberState : int{
 };
 
 // the stack structure of a fiber
-class FiberStack{
+class FiberMem{
 public:
-    FiberStack(size_t size = SYLAR_FIBER_DEFAULT_STACK_SIZE);
+    FiberMem(size_t size = SYLAR_FIBER_DEFAULT_STACK_SIZE);
     
-    const char* get_stack_bottom() const { return stack_bottom_; }
-    const char* get_stack_top() const { return stack_bottom_ - stack_size_; }
+    char* get_stack_bottom() const { return stack_bottom_; }
+    char* get_stack_buffer() const { return stack_buffer_.get(); }
     size_t get_stack_size() const { return stack_size_; }
+
+    std::shared_ptr<Fiber> get_occupier() const { return occupier_; }
+    void change_occupier(std::shared_ptr<Fiber> new_occupier);
 private:
     std::shared_ptr<Fiber> occupier_;    // the fiber occupying this stack now
     size_t stack_size_;      // size of the stack
@@ -44,12 +55,12 @@ class FiberSharedStackPool{
 public:
     FiberSharedStackPool(size_t stack_count, size_t stack_size = SYLAR_FIBER_DEFAULT_STACK_SIZE);
 
-    std::shared_ptr<FiberStack> get_fiber_stack();
+    std::shared_ptr<FiberMem> get_fiber_stack();
 private:
     size_t alloc_idx_;      // index for next allocation
     size_t stack_size_;     // size of each stack
     size_t stack_count_;    // number of stacks
-    std::vector<std::shared_ptr<FiberStack>> stack_array_; // stacks that can be shared
+    std::vector<std::shared_ptr<FiberMem>> stack_array_; // stacks that can be shared
 };
 
 // used to manage fiber environment per thread
@@ -59,36 +70,64 @@ public:
     FiberEnvironment();
 
     std::shared_ptr<Fiber> get_main_fiber() const { return fiber_call_stack_[0]; }
-    std::shared_ptr<Fiber> get_current_fiber() const { return fiber_call_stack_.back(); }
+    std::shared_ptr<Fiber> get_current_fiber() const { return fiber_call_stack_[call_stack_depth_ - 1]; }
     void push_fiber(std::shared_ptr<Fiber> fiber);
     void pop_fiber();
 private:
+    friend void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
+private:
     int call_stack_depth_;      // depth of the fiber call stack
     std::vector<std::shared_ptr<Fiber>> fiber_call_stack_;    // the call stack of fibers in this thread
-    // // used for swapping stacks when using shared stacks
-    // std::shared_ptr<Fiber> swap_in_fiber_;      // fiber to swap in
-    // std::shared_ptr<Fiber> swap_out_fiber_;     // fiber to swap out
+    // used for swapping stacks when using shared stacks
+    std::shared_ptr<Fiber> swap_in_fiber_;      // fiber to swap in
+    std::shared_ptr<Fiber> swap_out_fiber_;     // fiber to swap out
 };
+
+
+struct alignas(16) FiberContext{
+    enum REGISTER{
+        RBX = 0, RBP = 1, RSP = 2, R12 = 3, R13 = 4, R14 = 5, R15 = 6, 
+        RDI = 7, REG_COUNT
+    };
+    uint64_t registers[REG_COUNT];
+    uint64_t rflags;
+
+    char* ss_sp;
+    size_t ss_size;
+};
+void make_context(std::shared_ptr<Fiber> fiber);
 
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
-    typedef std::function<void*(void*)> fiber_func;
+    Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> stack_poll = nullptr, size_t stack_size = SYLAR_FIBER_DEFAULT_STACK_SIZE);
     //yeild
+    static void fiber_yield();
     //resume
+    void fiber_resume();
     //poll
-
+    //wrapped func_
+    FiberState get_state() const { return state_; }
+    void save_fiber_stack();
+private:
+    friend FiberEnvironment::FiberEnvironment();
+    friend void make_context(std::shared_ptr<Fiber> fiber);
+    friend void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
+    void set_state(FiberState state) { state_ = state; }
+    static void fiber_func_wrapper(Fiber* fiber);
 private:
     std::shared_ptr<FiberEnvironment> env_;
+    bool is_main_fiber_;
     FiberState state_;
+    fiber_func func_;
+    void* func_args_;
+    FiberContext context_;
     
+    bool use_shared_stack_;
+    std::shared_ptr<FiberMem> running_mem_; // stack in running state
+    const char* stack_buffer_top_;      // top of the stack in running state
 
-    // 二选一
-    std::shared_ptr<FiberStack> stack_;     //挂起时需保存并释放的栈空间
-    const char* stack_buffer_top_;  // top of the saved stack buffer
-
-
-    size_t stack_buffer_size_;
-    std::unique_ptr<char[]> stack_buffer_;  // buffer the stack when the fiber is suspended
+    size_t save_size_;
+    std::unique_ptr<char[]> save_buffer_;  // buffer the stack when the fiber is suspended
 
 };
 

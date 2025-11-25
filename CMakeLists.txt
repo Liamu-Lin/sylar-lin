@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
 project(sylar)
+enable_language(ASM)
 
 include (cmake/utils.cmake)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
-set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O3 -g -std=c++11 \
+set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O0 -g -std=c++11 \
     -Wall -Wno-deprecated -Werror -Wno-unused-function -Wno-unused-variable -Wno-builtin-macro-redefined")
 
 include_directories(./sylar)
-
 
 set(LIB_SRC
     sylar/log.cpp
@@ -17,6 +17,7 @@ set(LIB_SRC
     sylar/thread.cpp
     sylar/mutex.cpp
     sylar/fiber.cpp
+    sylar/swap_context.S
     )
 
 add_library(sylar SHARED ${LIB_SRC})
