@@ -114,6 +114,9 @@ Fiber::Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> 
 void Fiber::fiber_resume(){
     if(get_state() == FiberState::INITING)
         make_context(shared_from_this());
+    else if(get_state() == FiberState::TERMINATED)
+        return;
+
     std::shared_ptr<Fiber> cur_fiber = env_->get_current_fiber();
     env_->push_fiber(shared_from_this());
     set_state(FiberState::RUNNING);
@@ -125,7 +128,8 @@ void Fiber::fiber_yield(){
     std::shared_ptr<Fiber> cur_fiber = env->get_current_fiber();
     env->pop_fiber();
     std::shared_ptr<Fiber> next_fiber = env->get_current_fiber();
-    cur_fiber->set_state(FiberState::SUSPENDED);
+    if(cur_fiber->get_state() == FiberState::RUNNING)
+        cur_fiber->set_state(FiberState::SUSPENDED);
     next_fiber->set_state(FiberState::RUNNING);
     swap_fiber(cur_fiber, next_fiber);
 }
