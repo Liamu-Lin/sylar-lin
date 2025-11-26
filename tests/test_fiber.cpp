@@ -1,53 +1,103 @@
 #include "fiber.h"
-#include <iostream>
+#include "thread.h"
+#include "log.h"
 
-void func(void* args){
-    std::cout << "In fiber func" << std::endl;
-    for(int i = 0; i < 5; ++i){
-        std::cout << "Fiber iteration " << i << std::endl;
-        sylar::Fiber::fiber_yield();
-    }    
-}
+#include <iostream>
+#include <vector>
 
 struct arg_struct{
     int a;
     std::string b;
 };
-void func2(void* args){
+void func(void* args){
     arg_struct* arg = static_cast<arg_struct*>(args);
-    std::cout << "In fiber func2" << std::endl;
-    std::cout << "Fiber func2 args: " << arg->a << ", " << arg->b << std::endl;
-    for(int i = 0; i < 5; ++i){
-        std::cout << "Fiber func2 iteration " << i << std::endl;
+    for(int i = 1; i <= 5; ++i){
+        ++(arg->a);
+        std::cout << arg->a << " " << arg->b << " in func i = " << i << std::endl;
         sylar::Fiber::fiber_yield();
     }
 }
+void func1(void* args){
+    std::cout << "func1 start\n";
+    sylar::Fiber::fiber_yield();
+    std::cout << "func1 resumed\n";
+}
 
-void test_fiber(){
-    std::shared_ptr<sylar::Fiber> fiber(new sylar::Fiber(&func, nullptr));
-    fiber->fiber_resume();
-    for(int i = 0; i < 5; ++i){
-        std::cout << "Main iteration " << i << std::endl;
-        fiber->fiber_resume();
+void test_fiber(void* args){
+    arg_struct* arg = static_cast<arg_struct*>(args);
+    
+    // arg_struct ag;
+    // ag.a = 0;
+    // ag.b = arg->b + " from fiber";
+    // std::shared_ptr<sylar::Fiber> fiber(new sylar::Fiber(&func, &ag));
+    // fiber->fiber_resume();
+    // for(int i = 0; i < 5; ++i){
+    //     std::cout << "test_fiber in " << arg->b << " i = " << i << std::endl;
+    //     fiber->fiber_resume();
+    // }
+
+    std::shared_ptr<sylar::FiberSharedStackPool> pool(new sylar::FiberSharedStackPool(1, 128 * 1024));
+    std::vector<std::shared_ptr<sylar::Fiber>> fibers;
+    for(int i = 1; i <= 2; ++i){
+        arg_struct* a = new arg_struct;
+        a->a = i * 100;
+        a->b = arg->b + " shared stack fiber " + std::to_string(i);
+        std::shared_ptr<sylar::Fiber> f(new sylar::Fiber(&func1, nullptr, pool));
+        fibers.push_back(f);
     }
-    fiber->fiber_resume(); // resume after termination
-    std::cout << "Fiber state: " << static_cast<int>(fiber->get_state()) << std::endl;
+    for(size_t i = 0; i < fibers.size(); ++i){
+        fibers[i]->fiber_resume();
+        std::cout << "exit\n";
+    }
+    for(int j = 0; j < 1; ++j){
+        for(size_t i = 0; i < fibers.size(); ++i){
+            // if(j == 4 && i == fibers.size() -1)
+            //     break;
+            fibers[i]->fiber_resume();
+            std::cout << "exit\n";
+        }
+    }
+
+    std::cout << "end of test_fiber in " << std::endl;
+
+//7fffffff dc20
+}
+
+void test_fiber_fiber(){
+    std::string thread_name = sylar::Thread::get_name();
+    SYLAR_LOG(sylar::LoggerMgr.get_logger("sys"), sylar::LogLevel::Level::INFO)
+         << "test_fiber_fiber in thread " << thread_name;
+    
     
     arg_struct arg;
-    arg.a = 42;
-    arg.b = "Fiber2 argument";
-    std::shared_ptr<sylar::Fiber> fiber2(new sylar::Fiber(&func2, &arg));
-    fiber2->fiber_resume();
+    arg.b = thread_name;
+    std::shared_ptr<sylar::Fiber> fiber(new sylar::Fiber(&test_fiber, &arg));
+    fiber->fiber_resume();
     for(int i = 0; i < 5; ++i){
-        std::cout << "Main iteration for fiber2 " << i << std::endl;
-        fiber2->fiber_resume();
+        std::cout << "test_fiber_fiber in " << thread_name << " i = " << i << std::endl;
+        fiber->fiber_resume();
+    }
+}
+
+void test_thread_fiber_fiber(){
+    std::vector<sylar::Thread::ptr> thrs;
+    for(int i = 0; i < 5; ++i){
+        sylar::Thread::ptr thr(new sylar::Thread(&test_fiber_fiber, "fiber_thread_" + std::to_string(i)));
+        thrs.push_back(thr);
     }
 
+    for(auto& thr : thrs)
+        thr->join();
 }
 
 int main(){
 
-    test_fiber();
+    //test_thread_fiber_fiber();
+    struct arg_struct arg;
+    arg.b = "main thread";
+
+    test_fiber(&arg);
+
 
     return 0;
 }

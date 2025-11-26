@@ -95,23 +95,22 @@ struct alignas(16) FiberContext{
     char* ss_sp;
     size_t ss_size;
 };
-void make_context(std::shared_ptr<Fiber> fiber);
+static void make_context(std::shared_ptr<Fiber> fiber);
 
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
     Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> stack_poll = nullptr, size_t stack_size = SYLAR_FIBER_DEFAULT_STACK_SIZE);
-    //yeild
+    
     static void fiber_yield();
-    //resume
     void fiber_resume();
-    //poll
-    //wrapped func_
     FiberState get_state() const { return state_; }
     void save_fiber_stack();
 private:
     friend FiberEnvironment::FiberEnvironment();
     friend void make_context(std::shared_ptr<Fiber> fiber);
     friend void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
+    // init main fiber
+    Fiber();
     void set_state(FiberState state) { state_ = state; }
     static void fiber_func_wrapper(Fiber* fiber);
 private:
@@ -124,20 +123,12 @@ private:
     
     bool use_shared_stack_;
     std::shared_ptr<FiberMem> running_mem_; // stack in running state
-    const char* stack_buffer_top_;      // top of the stack in running state
+    char* stack_buffer_top_;      // top of the stack in running state
 
     size_t save_size_;
     std::unique_ptr<char[]> save_buffer_;  // buffer the stack when the fiber is suspended
 
 };
-
-
-
-
-
-
-
-
 
 
 }

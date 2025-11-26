@@ -16,8 +16,10 @@ FiberMem::FiberMem(size_t size):
 }
 
 void FiberMem::change_occupier(std::shared_ptr<Fiber> new_occupier){
-    if(occupier_ == new_occupier)
+    if(occupier_ == new_occupier || occupier_ == nullptr){
+        occupier_ = new_occupier;
         return;
+    }
     SYLAR_ASSERT(occupier_->get_state() == FiberState::SUSPENDED \
         || occupier_->get_state() == FiberState::TERMINATED);
     occupier_->save_fiber_stack();
@@ -43,10 +45,11 @@ std::shared_ptr<FiberMem> FiberSharedStackPool::get_fiber_stack(){
 
 FiberEnvironment::FiberEnvironment():
     call_stack_depth_(0),
-    fiber_call_stack_(SYLAR_FIBER_MAX_CALL_STACK_DEPTH){
-    //TODO: init main fiber
-    std::shared_ptr<Fiber> main_fiber(new Fiber(nullptr, nullptr));
-    main_fiber->is_main_fiber_ = true;
+    fiber_call_stack_(SYLAR_FIBER_MAX_CALL_STACK_DEPTH),
+    swap_in_fiber_(nullptr),
+    swap_out_fiber_(nullptr){
+    // init main fiber
+    std::shared_ptr<Fiber> main_fiber(new Fiber);
     push_fiber(main_fiber);
 }
 
@@ -110,7 +113,21 @@ Fiber::Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> 
     save_size_ = 0;
     save_buffer_ = nullptr;
 }
-    
+Fiber::Fiber():
+    env_(t_fiber_env),
+    is_main_fiber_(true),
+    state_(FiberState::RUNNING),
+    func_(nullptr),
+    func_args_(nullptr){
+    use_shared_stack_ = false;
+    running_mem_ = nullptr;
+
+    context_.ss_size = 0;
+    context_.ss_sp = nullptr;
+    save_size_ = 0;
+    save_buffer_ = nullptr;
+}
+
 void Fiber::fiber_resume(){
     if(get_state() == FiberState::INITING)
         make_context(shared_from_this());
@@ -120,7 +137,7 @@ void Fiber::fiber_resume(){
     std::shared_ptr<Fiber> cur_fiber = env_->get_current_fiber();
     env_->push_fiber(shared_from_this());
     set_state(FiberState::RUNNING);
-    cur_fiber->set_state(FiberState::SUSPENDED);    
+    cur_fiber->set_state(FiberState::SUSPENDED);
     swap_fiber(cur_fiber, shared_from_this());
 }
 void Fiber::fiber_yield(){
@@ -139,24 +156,34 @@ void Fiber::fiber_func_wrapper(Fiber* fiber){
     fiber->func_(fiber->func_args_);
     
     fiber->set_state(FiberState::TERMINATED);
-    fiber->fiber_yield();
+    fiber_yield();
 }
 
 
 void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber){
-    char dummy = 0;
-    old_fiber->stack_buffer_top_ = &dummy;
-    t_fiber_env->swap_out_fiber_ = old_fiber;
-    t_fiber_env->swap_in_fiber_ = new_fiber;
+    uintptr_t rsp_value = 0;
+    asm volatile ("movq %%rsp, %0" : "=r" (rsp_value));
+    old_fiber->stack_buffer_top_ = (char*)rsp_value;
 
-    if(new_fiber->use_shared_stack_)
+    if(new_fiber->use_shared_stack_){
+        t_fiber_env->swap_out_fiber_ = new_fiber->running_mem_->get_occupier();
+        t_fiber_env->swap_in_fiber_ = new_fiber;
         new_fiber->running_mem_->change_occupier(new_fiber);
+    }
+    else{
+        t_fiber_env->swap_out_fiber_ = nullptr;
+        t_fiber_env->swap_in_fiber_ = nullptr;
+    }
     swap_context(&old_fiber->context_, &new_fiber->context_);
-    //above variable are invalid now
+
+    // resume stack
+    // the new_fiber is different from the old_fiber,
+    // because when swap back, the old_fiber is now suspended
     std::shared_ptr<Fiber> b_new_fiber = t_fiber_env->swap_in_fiber_;
-    if(b_new_fiber && b_new_fiber->save_buffer_ && b_new_fiber->save_size_ > 0){
-        memcpy(b_new_fiber->running_mem_->get_stack_bottom(),
-            b_new_fiber->save_buffer_.get(), b_new_fiber->save_size_);
+    std::shared_ptr<Fiber> b_old_fiber = t_fiber_env->swap_out_fiber_;
+    if(b_new_fiber && b_old_fiber && b_new_fiber != b_old_fiber){
+        if(b_new_fiber->save_buffer_ && b_new_fiber->save_size_ > 0)
+            memcpy(b_new_fiber->stack_buffer_top_, b_new_fiber->save_buffer_.get(), b_new_fiber->save_size_);
     }
 }
 
