@@ -1,0 +1,35 @@
+$ ../bin/test_fiber 
+2025-11-27 03:56:06 [INFO][root] thread:18383  fiber:666 sylar/log.cpp:342      look_up name = logs not exists, create it
+resume: ready to swap_fiber
+swap_fiber
+before swap_context
+func1 start
+swap_fiber
+before swap_context
+after swap_context
+exit
+resume: ready to swap_fiber
+swap_fiber
+save_fiber_stack
+before swap_context
+func1 start
+swap_fiber
+before swap_context
+after swap_context
+exit
+resume: ready to swap_fiber
+swap_fiber
+save_fiber_stack
+before swap_context
+after swap_context
+fiber_yield back
+func1 resumed
+swap_fiber
+before swap_context
+after swap_context
+exit: 0, 0-----------------------
+resume: ready to swap_fiber
+swap_fiber
+save_fiber_stack
+before swap_context
+Segmentation fault (core dumped)

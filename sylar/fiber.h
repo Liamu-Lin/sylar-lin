@@ -114,7 +114,7 @@ private:
     void set_state(FiberState state) { state_ = state; }
     static void fiber_func_wrapper(Fiber* fiber);
 private:
-    std::shared_ptr<FiberEnvironment> env_;
+    FiberEnvironment& env_;
     bool is_main_fiber_;
     FiberState state_;
     fiber_func func_;

@@ -51,10 +51,8 @@ void test_fiber(void* args){
     }
     for(int j = 0; j < 1; ++j){
         for(size_t i = 0; i < fibers.size(); ++i){
-            // if(j == 4 && i == fibers.size() -1)
-            //     break;
             fibers[i]->fiber_resume();
-            std::cout << "exit\n";
+            std::cout << "exit: " << j << ", " << i << "-----------------------" << std::endl;
         }
     }
 
