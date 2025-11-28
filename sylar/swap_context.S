@@ -15,6 +15,8 @@ swap_context:
     pushfq                  // save rflags
     popq %rax
     movq %rax, 0x40(%rdi)
+    movq (%rsp), %rax       // save return address
+    movq %rax, 0x48(%rdi)
     
     // load new context
     movq 0x00(%rsi), %rbx   // restore general purpose registers
@@ -28,5 +30,7 @@ swap_context:
     movq 0x40(%rsi), %rax   // restore rflags
     pushq %rax
     popfq
+    leaq 8(%rsp), %rsp      // overwrite return address
+    pushq 0x48(%rsi)
 
     ret     //ret addr is already on stack

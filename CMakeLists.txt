@@ -11,6 +11,9 @@ set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O0 -g -std=c++11 \
 include_directories(./sylar)
 
 set(LIB_SRC
+    sylar/coroutine.S
+    sylar/coroutine.cpp
+
     sylar/log.cpp
     sylar/util.cpp
     sylar/config.cpp
@@ -54,6 +57,17 @@ add_executable(test_fiber tests/test_fiber.cpp)
 force_redefine_file_macro_for_sources(test_fiber)
 add_dependencies(test_fiber sylar)
 target_link_libraries(test_fiber ${LIBS})
+
+
+
+
+add_executable(test_routine tests/test_routine.cpp)
+force_redefine_file_macro_for_sources(test_routine)
+add_dependencies(test_routine sylar)
+target_link_libraries(test_routine ${LIBS})
+
+
+
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

@@ -91,6 +91,7 @@ struct alignas(16) FiberContext{
     };
     uint64_t registers[REG_COUNT];
     uint64_t rflags;
+    uint64_t ret_addr;
 
     char* ss_sp;
     size_t ss_size;
