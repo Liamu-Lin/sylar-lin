@@ -30,7 +30,8 @@ void Thread::set_name(const std::string& name){
 
 Thread::Thread(std::function<void()> cb, const std::string& name) :
     name_(name),
-    cb_(cb){
+    cb_(cb),
+    sema_(0){
     int rt = pthread_create(&thread_, nullptr, &Thread::run, this);
     if(rt != 0){
         SYLAR_LOG(thread_logger, thread_logger->get_level()) 
@@ -38,6 +39,7 @@ Thread::Thread(std::function<void()> cb, const std::string& name) :
         throw std::logic_error("pthread_create error");
     }
     pthread_setname_np(thread_, name_.c_str());
+    sema_.Wait();
 }
 Thread::~Thread(){
     if(thread_){
@@ -61,7 +63,8 @@ void* Thread::run(void* args){
     t_thread = (Thread*)args;
     t_thread->id_ = get_thread_id();
     t_thread_name = t_thread->name_;
-    //pthread_setname_np(t_thread->thread_, t_thread->name_.c_str());
+
+    t_thread->sema_.Post();
 
     std::function<void()> cb = t_thread->cb_;
     cb.swap(t_thread->cb_);

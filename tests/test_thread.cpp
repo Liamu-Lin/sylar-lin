@@ -39,7 +39,6 @@ void fun2(){
         SYLAR_LOG(logger, sylar::LogLevel::Level::INFO)
             << str;
     }
-    sleep(100);
 }
 
 void test_thread(){

@@ -3,6 +3,7 @@
 
 #include "log.h"
 #include "util.h"
+#include "mutex.h"
 
 #include <pthread.h>
 
@@ -15,7 +16,7 @@ namespace sylar{
 class Thread{
 public:
     typedef std::shared_ptr<Thread> ptr;
-
+public:
     Thread(std::function<void()> cb, const std::string& name = "UNKNOWN");
     ~Thread();
 
@@ -37,6 +38,7 @@ private:
     std::string name_;
     pthread_t thread_;
     std::function<void()> cb_;
+    Semaphore sema_;
 };
 
 

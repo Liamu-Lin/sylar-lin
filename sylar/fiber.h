@@ -21,8 +21,13 @@ namespace sylar{
 class Fiber;
 class FiberContext;
 
+// TODO: in some functions, we shouldn't use shared_ptr. 
+// Because when the fiber is swapped out and never swapped in again,
+// the shared_ptr will never be released, causing memory leak.
+
 //TODO: use template for func args
-typedef void (*fiber_func)(void*);
+//typedef void (*fiber_func)(void*);
+typedef std::function<void(void*)> fiber_func;
 
 enum class FiberState : int{
     INITING,
@@ -101,19 +106,25 @@ static void make_context(std::shared_ptr<Fiber> fiber);
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
     Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> stack_poll = nullptr, size_t stack_size = SYLAR_FIBER_DEFAULT_STACK_SIZE);
-    
-    static void fiber_yield();
+
+    bool reset(fiber_func func, void* args);
+
     void fiber_resume();
+    static void fiber_yield();
+
     FiberState get_state() const { return state_; }
-    void save_fiber_stack();
+    static std::shared_ptr<Fiber> get_this();
 private:
     friend FiberEnvironment::FiberEnvironment();
+    friend void FiberMem::change_occupier(std::shared_ptr<Fiber> new_occupier);
     friend void make_context(std::shared_ptr<Fiber> fiber);
     friend void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
+private:
     // init main fiber
     Fiber();
-    void set_state(FiberState state) { state_ = state; }
+    void save_fiber_stack();
     static void fiber_func_wrapper(Fiber* fiber);
+    void set_state(FiberState state) { state_ = state; }
 private:
     FiberEnvironment& env_;
     bool is_main_fiber_;
