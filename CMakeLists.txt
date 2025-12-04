@@ -21,6 +21,7 @@ set(LIB_SRC
     sylar/mutex.cpp
     sylar/fiber.cpp
     sylar/swap_context.S
+    sylar/scheduler.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -58,8 +59,10 @@ force_redefine_file_macro_for_sources(test_fiber)
 add_dependencies(test_fiber sylar)
 target_link_libraries(test_fiber ${LIBS})
 
-
-
+add_executable(test_scheduler tests/test_scheduler.cpp)
+force_redefine_file_macro_for_sources(test_scheduler)
+add_dependencies(test_scheduler sylar)
+target_link_libraries(test_scheduler ${LIBS})
 
 #add_executable(test_routine tests/test_routine.cpp)
 #force_redefine_file_macro_for_sources(test_routine)

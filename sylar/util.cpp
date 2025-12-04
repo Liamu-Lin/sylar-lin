@@ -1,4 +1,5 @@
 #include "util.h"
+#include "fiber.h"
 #include <thread>
 
 namespace sylar{
@@ -8,7 +9,7 @@ pid_t get_thread_id(){
 }
 
 fid_t get_fiber_id(){
-    return 666;
+    return sylar::Fiber::get_this()->get_id();
 }
 
 

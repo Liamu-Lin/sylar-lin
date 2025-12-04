@@ -6,6 +6,7 @@ namespace sylar{
 
 // TODO: use lazy initialization
 static thread_local FiberEnvironment t_fiber_env;
+static thread_local size_t t_fiber_cnt = 0;
 
 void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
 
@@ -62,6 +63,12 @@ void FiberEnvironment::pop_fiber(){
     fiber_call_stack_[call_stack_depth_].reset();
 }
 
+std::shared_ptr<Fiber> FiberEnvironment::get_current_fiber() const {
+    SYLAR_ASSERT(call_stack_depth_ > 0);
+    return fiber_call_stack_[call_stack_depth_ - 1];
+}
+
+
 void make_context(std::shared_ptr<Fiber> fiber){
     FiberContext* ctx = &fiber->context_;
     char* sp = ctx->ss_sp + ctx->ss_size - sizeof(void*);
@@ -78,7 +85,8 @@ void make_context(std::shared_ptr<Fiber> fiber){
 
 
 Fiber::Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> stack_poll, size_t stack_size):
-    env_(t_fiber_env),
+    id_(t_fiber_cnt++),
+    env_(&t_fiber_env),
     is_main_fiber_(false),
     state_(FiberState::INITING),
     func_(func),
@@ -110,7 +118,8 @@ Fiber::Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> 
     save_buffer_ = nullptr;
 }
 Fiber::Fiber():
-    env_(t_fiber_env),
+    id_(t_fiber_cnt++),
+    env_(&t_fiber_env),
     is_main_fiber_(true),
     state_(FiberState::RUNNING),
     func_(nullptr),
@@ -147,8 +156,8 @@ void Fiber::fiber_resume(){
     else if(get_state() == FiberState::TERMINATED || get_state() == FiberState::EXCEPTION)
         return;
 
-    std::shared_ptr<Fiber> cur_fiber = env_.get_current_fiber();
-    env_.push_fiber(shared_from_this());
+    std::shared_ptr<Fiber> cur_fiber = env_->get_current_fiber();
+    env_->push_fiber(shared_from_this());
     set_state(FiberState::RUNNING);
     cur_fiber->set_state(FiberState::SUSPENDED);
     swap_fiber(cur_fiber, shared_from_this());
@@ -185,6 +194,10 @@ std::shared_ptr<Fiber> Fiber::get_this(){
     return t_fiber_env.get_current_fiber();
 }
 
+void Fiber::set_env(){
+    SYLAR_ASSERT(state_ != FiberState::RUNNING);
+    env_ = &t_fiber_env;
+}
 
 void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber){
     uintptr_t rsp_value = 0;

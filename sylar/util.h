@@ -17,9 +17,9 @@
 #include <string>
 #include <vector>
 
-namespace sylar{
+#include "type.h"
 
-typedef uint32_t fid_t;
+namespace sylar{
 
 pid_t get_thread_id();
 //TODO

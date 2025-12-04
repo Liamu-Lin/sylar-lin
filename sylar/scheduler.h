@@ -15,7 +15,7 @@ namespace sylar{
 
 class Scheduler : public std::enable_shared_from_this<Scheduler>{
 public:
-    typedef Mutex Mutex;
+    typedef Mutex MutexType;
 public:
     Scheduler(size_t thread_count = 1, const std::string& name = "default_schelduler_name");
     ~Scheduler();
@@ -23,8 +23,8 @@ public:
     void start();
     void stop();
 
-    void add_fiber(std::shared_ptr<Fiber> fiber);
-    void add_fiber(sylar::fiber_func func, void* args = nullptr);
+    void add_fiber(std::shared_ptr<Fiber> fiber, pid_t thread = -1);
+    void add_fiber(sylar::fiber_func func, void* args = nullptr, pid_t thread = -1);
 
     static std::shared_ptr<Scheduler> GetThis();
 protected:
@@ -38,12 +38,12 @@ private:
     void SetThis();
 private:
     struct ScheduledTask{
-        pid_t thread_ = -1;
+        pid_t thread_;
         std::shared_ptr<Fiber> fiber_;
     };
     enum State{ INIT, RUNNING, STOPPING, STOPPED };
 private:
-    Mutex mutex_;
+    MutexType mutex_;
     std::string name_;
     size_t thread_count_;
 

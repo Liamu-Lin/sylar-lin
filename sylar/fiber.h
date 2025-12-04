@@ -12,6 +12,7 @@
 #include <stack>
 
 #include "macro.h"
+#include "type.h"
 
 #define SYLAR_FIBER_DEFAULT_STACK_SIZE (128 * 1024)     // 128KB
 
@@ -20,6 +21,7 @@
 namespace sylar{
 class Fiber;
 class FiberContext;
+class Scheduler;
 
 // TODO: in some functions, we shouldn't use shared_ptr. 
 // Because when the fiber is swapped out and never swapped in again,
@@ -75,7 +77,7 @@ public:
     FiberEnvironment();
 
     std::shared_ptr<Fiber> get_main_fiber() const { return fiber_call_stack_[0]; }
-    std::shared_ptr<Fiber> get_current_fiber() const { return fiber_call_stack_[call_stack_depth_ - 1]; }
+    std::shared_ptr<Fiber> get_current_fiber() const;
     void push_fiber(std::shared_ptr<Fiber> fiber);
     void pop_fiber();
 private:
@@ -103,6 +105,7 @@ struct alignas(16) FiberContext{
 };
 static void make_context(std::shared_ptr<Fiber> fiber);
 
+
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
     Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> stack_poll = nullptr, size_t stack_size = SYLAR_FIBER_DEFAULT_STACK_SIZE);
@@ -113,8 +116,10 @@ public:
     static void fiber_yield();
 
     FiberState get_state() const { return state_; }
+    fid_t get_id() const { return id_; }
     static std::shared_ptr<Fiber> get_this();
 private:
+    friend class Scheduler;
     friend FiberEnvironment::FiberEnvironment();
     friend void FiberMem::change_occupier(std::shared_ptr<Fiber> new_occupier);
     friend void make_context(std::shared_ptr<Fiber> fiber);
@@ -125,8 +130,10 @@ private:
     void save_fiber_stack();
     static void fiber_func_wrapper(Fiber* fiber);
     void set_state(FiberState state) { state_ = state; }
+    void set_env();
 private:
-    FiberEnvironment& env_;
+    fid_t id_;
+    FiberEnvironment* env_;
     bool is_main_fiber_;
     FiberState state_;
     fiber_func func_;
