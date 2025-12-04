@@ -3,7 +3,7 @@
 
 namespace sylar{
 
-static std::shared_ptr<Scheduler> g_scheduler;
+static thread_local std::shared_ptr<Scheduler> g_scheduler;
 
 std::shared_ptr<Scheduler> Scheduler::GetThis(){
     return g_scheduler;
@@ -47,8 +47,10 @@ void Scheduler::start(){
 }
 void Scheduler::stop(){
     // forbidden stop the scheduler in the thread scheduled by itself
-    if(state_.load() != RUNNING || GetThis().get() == this)
+    if(state_.load() != RUNNING)
         return;
+    SYLAR_ASSERT(GetThis().get() != this);
+
     state_.store(STOPPING);
     // tickle all threads to wake them up
     for(size_t i = 0; i < thread_count_; ++i)
@@ -70,6 +72,9 @@ void Scheduler::schedule(){
                                       , this, std::placeholders::_1), nullptr));
     
     while(true){
+        // // if the scheduler is stopping, stop scheduling
+        // if(state_.load() == STOPPING)
+        //     break;
         bool have_task = false;
         bool tickle_others = false;
         //chose an available task
@@ -97,6 +102,7 @@ void Scheduler::schedule(){
 
         if(have_task && task.fiber_->get_state() != FiberState::TERMINATED
                      && task.fiber_->get_state() != FiberState::EXCEPTION){
+
             active_thread_count_.fetch_add(1);
             task.fiber_->set_env();
             task.fiber_->fiber_resume();
@@ -111,7 +117,7 @@ void Scheduler::schedule(){
             // scheduler is stopping
             if(idle_fiber->get_state() == FiberState::TERMINATED
                || idle_fiber->get_state() == FiberState::EXCEPTION){
-                SYLAR_LOG(LoggerMgr.get_logger("system"), LogLevel::Level::ERROR)
+                SYLAR_LOG(LoggerMgr.get_logger("system"), LogLevel::Level::DEBUG)
                     << "Idle Fiber Terminated or Exception";
                 break;
             }
@@ -125,6 +131,8 @@ void Scheduler::schedule(){
 }
 
 void Scheduler::idle(void*){
+    SYLAR_LOG(LoggerMgr.get_logger("system"), LogLevel::Level::DEBUG)
+        << "Scheduler::idle";
     while(!can_stop()){
         sylar::Fiber::fiber_yield();
     }
@@ -138,6 +146,7 @@ void Scheduler::tickle(){
 bool Scheduler::can_stop(){
     MutexType::Lock lock(mutex_);
     return state_ == STOPPING
+           && threads_.empty()
            && active_thread_count_ == 0
            && tasks_.empty();
 }
