@@ -26,6 +26,8 @@ public:
     void add_fiber(std::shared_ptr<Fiber> fiber, pid_t thread = -1);
     void add_fiber(sylar::fiber_func func, void* args = nullptr, pid_t thread = -1);
 
+    bool has_idle_threads() const { return idle_thread_count_ > 0; }
+
     static std::shared_ptr<Scheduler> GetThis();
 protected:
     // TODO: change to std::function(...args)

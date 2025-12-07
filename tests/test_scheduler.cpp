@@ -1,6 +1,7 @@
 #include "scheduler.h"
 #include "log.h"
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 std::shared_ptr<sylar::Logger> g_logger = sylar::LoggerMgr.get_logger("system");
@@ -13,8 +14,9 @@ struct arg_struct{
 void fun1(void* args){
     arg_struct* arg = (static_cast<arg_struct*>(args));
     for(int i = 0; i < 5; ++i){
-        std::cout << "fun1: " << arg->a << ", " << arg->b << ", " << i << std::endl;
-        //sylar::Fiber::fiber_yield();
+        SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO)
+                << "fun1: " << arg->a << ", " << arg->b << ", " << i;
+        sylar::Fiber::fiber_yield();
     }
 }
 
@@ -71,7 +73,7 @@ void test_scheduler_recursive(){
 
 int main(){
 
-    //test_scheduler();
+    test_scheduler();
 
     test_scheduler_recursive();
 

@@ -3,6 +3,7 @@
 
 namespace sylar{
 
+static thread_local bool t_is_scheduler_thread = false;
 static thread_local std::shared_ptr<Scheduler> g_scheduler;
 
 std::shared_ptr<Scheduler> Scheduler::GetThis(){
@@ -34,6 +35,8 @@ void Scheduler::add_fiber(sylar::fiber_func func, void* args, pid_t thread){
 }
 
 void Scheduler::start(){
+    SetThis();
+
     MutexType::Lock lock(mutex_);
     if(state_.load() != INIT)
         return;
@@ -46,10 +49,10 @@ void Scheduler::start(){
     }
 }
 void Scheduler::stop(){
-    // forbidden stop the scheduler in the thread scheduled by itself
     if(state_.load() != RUNNING)
         return;
-    SYLAR_ASSERT(GetThis().get() != this);
+    // forbidden stop the scheduler in the thread scheduled by this scheduler
+    SYLAR_ASSERT(t_is_scheduler_thread == false);
 
     state_.store(STOPPING);
     // tickle all threads to wake them up
@@ -67,6 +70,7 @@ void Scheduler::stop(){
 
 void Scheduler::schedule(){
     SetThis();
+    t_is_scheduler_thread = true;
 
     std::shared_ptr<Fiber> idle_fiber(new Fiber(std::bind(&Scheduler::idle
                                       , this, std::placeholders::_1), nullptr));
