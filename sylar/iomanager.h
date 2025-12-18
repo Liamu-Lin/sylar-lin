@@ -11,7 +11,7 @@
 #include "fiber.h"
 #include "mutex.h"
 
-#define SYLAR_IOMANAGER_TIMEOUT 3000
+#define SYLAR_IOMANAGER_TIMEOUT 1000
 
 namespace sylar{
 class IOManager;
@@ -22,20 +22,21 @@ class IOEvent;
     private:
         void reset();
         void trigger();
-        void set(std::shared_ptr<Scheduler> scheduler, std::shared_ptr<Fiber> fiber);
+        void set(Scheduler* scheduler, std::shared_ptr<Fiber> fiber);
     private:
         friend class IOEvent;
     private:
-        std::shared_ptr<Scheduler> scheduler_;
+        Scheduler* scheduler_;
         std::shared_ptr<Fiber> fiber_;
     };
 
 // TODO: make it transparent to users
 class IOEvent{
 public:
+    IOEvent(int fd):fd_(fd){}
     uint32_t get_events() const;
 private:
-    bool add_event(uint32_t event, int epoll_fd);
+    bool add_event(uint32_t event, int epoll_fd, fiber_func func, void* args);
     bool del_event(uint32_t event, int epoll_fd);
     bool cancel_event(uint32_t event, int epoll_fd);
 private:
@@ -60,7 +61,7 @@ public:
     bool cancel_event(int fd, uint32_t event);
     bool cancel_all(int fd);
 
-    static std::shared_ptr<IOManager> GetThis();
+    static IOManager* GetThis();
 protected:
     void tickle() override;
     bool can_stop() override;

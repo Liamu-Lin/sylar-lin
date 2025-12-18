@@ -4,13 +4,13 @@
 namespace sylar{
 
 static thread_local bool t_is_scheduler_thread = false;
-static thread_local std::shared_ptr<Scheduler> g_scheduler;
+static thread_local Scheduler* g_scheduler = nullptr;
 
-std::shared_ptr<Scheduler> Scheduler::GetThis(){
+Scheduler* Scheduler::GetThis(){
     return g_scheduler;
 }
 void Scheduler::SetThis(){
-    g_scheduler = shared_from_this();
+    g_scheduler = this;
 }
 
 Scheduler::Scheduler(size_t thread_count, const std::string& name):
@@ -35,7 +35,7 @@ void Scheduler::add_fiber(sylar::fiber_func func, void* args, pid_t thread){
 }
 
 void Scheduler::start(){
-    SetThis();
+    //SetThis();
 
     MutexType::Lock lock(mutex_);
     if(state_.load() != INIT)
@@ -106,7 +106,6 @@ void Scheduler::schedule(){
 
         if(have_task && task.fiber_->get_state() != FiberState::TERMINATED
                      && task.fiber_->get_state() != FiberState::EXCEPTION){
-
             active_thread_count_.fetch_add(1);
             task.fiber_->set_env();
             task.fiber_->fiber_resume();

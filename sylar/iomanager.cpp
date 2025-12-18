@@ -5,7 +5,7 @@ namespace sylar{
 
 
 void EventContext::reset(){
-    scheduler_.reset();
+    scheduler_ = nullptr;
     fiber_.reset();
 }
 void EventContext::trigger(){
@@ -14,7 +14,7 @@ void EventContext::trigger(){
     scheduler_->add_fiber(fiber_);
     reset();
 }
-void EventContext::set(std::shared_ptr<Scheduler> scheduler, std::shared_ptr<Fiber> fiber){
+void EventContext::set(Scheduler* scheduler, std::shared_ptr<Fiber> fiber){
     scheduler_ = scheduler;
     fiber_ = fiber;
 }
@@ -25,16 +25,16 @@ uint32_t IOEvent::get_events() const{
     Mutex::Lock lock(mutex_);
     return events_;
 }
-bool IOEvent::add_event(uint32_t event, int epoll_fd){
+bool IOEvent::add_event(uint32_t event, int epoll_fd, fiber_func func, void* args){
     Mutex::Lock lock(mutex_);
     uint32_t old_events = events_;
     int op = events_ ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
 
     events_ |= event;
     if(event & EPOLLIN)
-        read_.set(Scheduler::GetThis(), Fiber::get_this());
+        read_.set(Scheduler::GetThis(), std::make_shared<Fiber>(func, args));
     if(event & EPOLLOUT)
-        write_.set(Scheduler::GetThis(), Fiber::get_this());
+        write_.set(Scheduler::GetThis(), std::make_shared<Fiber>(func, args));
 
     epoll_event ep_event;
     ep_event.events = EPOLLET | events_;
@@ -78,7 +78,6 @@ bool IOEvent::cancel_event(uint32_t event, int epoll_fd){
         Mutex::Lock lock(mutex_);
         if((events_ & event) == 0)
             return false;
-
         if(event & EPOLLIN)
             read_.trigger();
         if(event & EPOLLOUT)
@@ -111,11 +110,11 @@ bool IOManager::add_event(int fd, uint32_t event, fiber_func func, void* args){
     }
     if(io_event){
         RWMutex::WLock lock(rw_mutex_);
-        ret = io_event->add_event(event, epoll_fd_);
+        ret = io_event->add_event(event, epoll_fd_, func, args);
     }
     else{
-        io_event.reset(new IOEvent);
-        ret = io_event->add_event(event, epoll_fd_);
+        io_event.reset(new IOEvent{fd});
+        ret = io_event->add_event(event, epoll_fd_, func, args);
         RWMutex::WLock lock(rw_mutex_);
         fd_event_map_[fd] = io_event;
     }
@@ -193,8 +192,8 @@ bool IOManager::cancel_all(int fd){
     return ret;
 }
 
-std::shared_ptr<IOManager> IOManager::GetThis(){
-    return std::dynamic_pointer_cast<IOManager>(Scheduler::GetThis());
+IOManager* IOManager::GetThis(){
+    return dynamic_cast<IOManager*>(Scheduler::GetThis());
 }
 
 void IOManager::tickle(){
@@ -233,12 +232,11 @@ void IOManager::idle(void* args){
                 io_event->cancel_event(EPOLLOUT, epoll_fd_);
                 pending_event_count_ -= 1;
             }
+            tickle();
         }
-        if(rt > 0){
-            delete[] events;
-            Fiber::fiber_yield();
-            events = new epoll_event[64]();
-        }
+        delete[] events;
+        Fiber::fiber_yield();
+        events = new epoll_event[64]();
 
     }
     delete[] events;

@@ -27,8 +27,8 @@ public:
     void add_fiber(sylar::fiber_func func, void* args = nullptr, pid_t thread = -1);
 
     bool has_idle_threads() const { return idle_thread_count_ > 0; }
-
-    static std::shared_ptr<Scheduler> GetThis();
+    
+    static Scheduler* GetThis();
 protected:
     // TODO: change to std::function(...args)
     virtual void idle(void*);
@@ -45,7 +45,7 @@ private:
     };
     enum State{ INIT, RUNNING, STOPPING, STOPPED };
 private:
-    MutexType mutex_;
+    mutable MutexType mutex_;
     std::string name_;
     size_t thread_count_;
 

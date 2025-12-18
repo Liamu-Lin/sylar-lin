@@ -22,6 +22,7 @@ set(LIB_SRC
     sylar/fiber.cpp
     sylar/swap_context.S
     sylar/scheduler.cpp
+    sylar/iomanager.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -63,6 +64,11 @@ add_executable(test_scheduler tests/test_scheduler.cpp)
 force_redefine_file_macro_for_sources(test_scheduler)
 add_dependencies(test_scheduler sylar)
 target_link_libraries(test_scheduler ${LIBS})
+
+add_executable(test_iomanager tests/test_iomanager.cpp)
+force_redefine_file_macro_for_sources(test_iomanager)
+add_dependencies(test_iomanager sylar)
+target_link_libraries(test_iomanager ${LIBS})
 
 #add_executable(test_routine tests/test_routine.cpp)
 #force_redefine_file_macro_for_sources(test_routine)
