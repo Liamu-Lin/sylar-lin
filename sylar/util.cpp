@@ -35,6 +35,13 @@ std::string backtrace_symbols(int size, int skip, const std::string& prefix){
     return ss.str();
 }
 
+namespace TimeUtil{
+    uint64_t get_time_ms(){
+        struct timeval tv;
+        gettimeofday(&tv, nullptr);
+        return tv.tv_sec * 1000UL + tv.tv_usec / 1000UL;
+    }
+}
 
 namespace FSUtil{
     bool open_for_read(::std::ifstream& ifs, const ::std::string& file_name, ::std::ios_base::openmode mode){

@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/stat.h>
 #include <execinfo.h>
 
@@ -29,6 +30,9 @@ fid_t get_fiber_id();
 void backtrace(std::vector<std::string>& buffer, int size, int skip = 0);
 std::string backtrace_symbols(int size, int skip = 0, const std::string& prefix = "");
 
+namespace TimeUtil{
+    uint64_t get_time_ms();
+}
 
 namespace FSUtil{
     bool open_for_read(::std::ifstream& ifs, const ::std::string& file_name, 
