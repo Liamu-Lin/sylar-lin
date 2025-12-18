@@ -23,6 +23,7 @@ set(LIB_SRC
     sylar/swap_context.S
     sylar/scheduler.cpp
     sylar/iomanager.cpp
+    sylar/timer.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
