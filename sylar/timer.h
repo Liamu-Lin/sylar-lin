@@ -2,9 +2,13 @@
 #define __SYLAR_TIMER_H__
 
 #include <memory>
+#include <atomic>
+#include <vector>
+#include <set>
 #include <stdint.h>
 
 #include "fiber.h"
+#include "mutex.h"
 
 namespace sylar{
 
@@ -12,7 +16,9 @@ class TimerManager;
 
 class Timer: public std::enable_shared_from_this<Timer> {
     friend class TimerManager;
+    typedef std::shared_ptr<Timer> ptr;
 public:
+    void run();
     bool cancel();
     // restart the timer
     bool refresh();
@@ -31,19 +37,35 @@ public:
         }
     };
 private:
-    Timer(bool recurring, uint64_t ms, fiber_func cb, TimerManager* manager);
+    Timer(bool recurring, uint64_t ms, fiber_func cb, void* args_, TimerManager* manager);
+    Timer(u_int64_t ms):next_expiration_(ms){}
 private:
     bool is_recurring_;
     uint64_t period_time_;
     uint64_t next_expiration_;
     fiber_func cb_;
+    void* args_;
     TimerManager* manager_;
 };
 
 class TimerManager{
+    friend class Timer;
 public:
-    bool add_timer(bool recurring, uint64_t ms, fiber_func cb);
-    bool del_timer(std::shared_ptr<Timer> timer);
+    Timer::ptr add_timer(bool recurring, uint64_t ms, fiber_func cb, void* args = nullptr);
+    Timer::ptr add_timer(bool recurring, uint64_t ms, fiber_func cb, std::weak_ptr<void> cond, void* args = nullptr);
+    bool del_timer(Timer::ptr timer);
+    uint64_t get_next_timer() const;
+    void get_expired_timers(std::vector<Timer::ptr> expired_timers);
+    bool empty() const;
+private:
+    bool add_timer(Timer::ptr timer);
+    static void cond_timer_cb(fiber_func cb, std::weak_ptr<void> cond, void* args);
+protected:
+    virtual void on_timer_insert_at_front() = 0;
+private:
+    mutable RWMutex timers_rwmutex_;
+    mutable std::atomic<bool> need_tickle_{false};
+    std::set<Timer::ptr, Timer::Comparator> timers_;
 };
 
 }
