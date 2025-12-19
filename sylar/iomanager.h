@@ -9,6 +9,7 @@
 
 #include "scheduler.h"
 #include "fiber.h"
+#include "timer.h"
 #include "mutex.h"
 
 #define SYLAR_IOMANAGER_TIMEOUT 1000
@@ -51,7 +52,7 @@ private:
 };
 
 
-class IOManager : public Scheduler{
+class IOManager : public Scheduler, public TimerManager{
 public:
     IOManager(size_t thread_count = 1, const std::string& name = "default_iomanager_name");
     ~IOManager();
@@ -66,6 +67,7 @@ protected:
     void tickle() override;
     bool can_stop() override;
     void idle(void* args) override;
+    void on_timer_insert_at_front() override;
 private:
     Semaphore sem_{0};
     int epoll_fd_ = -1;

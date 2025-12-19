@@ -202,21 +202,35 @@ void IOManager::tickle(){
 }
 
 bool IOManager::can_stop(){
-    return Scheduler::can_stop() && pending_event_count_ == 0;
+    return Scheduler::can_stop() &&
+           pending_event_count_ == 0 &&
+           TimerManager::empty();
 }
 
 void IOManager::idle(void* args){
-    epoll_event* events = new epoll_event[64]();
+    epoll_event* events = new epoll_event[64];
     while(true){
         if(can_stop())
             break;
 
         int rt = 0;
+        int time_out = 0;
         while(true){
-            rt = epoll_wait(epoll_fd_, events, 64, SYLAR_IOMANAGER_TIMEOUT);
-            if(rt != 0 || errno != EINTR)
+            uint64_t next_timer = get_next_timer();
+            if(next_timer > SYLAR_IOMANAGER_TIMEOUT)
+                time_out = SYLAR_IOMANAGER_TIMEOUT;
+            else
+                time_out = next_timer;
+            rt = epoll_wait(epoll_fd_, events, 64, time_out);
+            if(rt >= 0 || errno != EINTR)
                 break;
         }
+        //process timers
+        std::vector<Timer::ptr> expired_timers;
+        get_expired_timers(expired_timers);
+        for(auto& timer : expired_timers)
+            add_fiber(timer->get_callback(), timer->get_args());
+        expired_timers.clear();
         // process events
         for(int i = 0; i < rt; ++i){
             uint32_t revents = events[i].events;
@@ -242,6 +256,9 @@ void IOManager::idle(void* args){
     delete[] events;
 }
 
+void IOManager::on_timer_insert_at_front(){
+    tickle();
+}
 
 
 }

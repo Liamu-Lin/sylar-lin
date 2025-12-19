@@ -15,10 +15,10 @@ namespace sylar{
 class TimerManager;
 
 class Timer: public std::enable_shared_from_this<Timer> {
+public:
     friend class TimerManager;
     typedef std::shared_ptr<Timer> ptr;
 public:
-    void run();
     bool cancel();
     // restart the timer
     bool refresh();
@@ -26,6 +26,8 @@ public:
     // if from_now is true, the time is counted from now;
     // otherwise, from the initial/last expiration time
     bool reset(uint64_t ms, bool from_now);
+    void* get_args() const { return args_; }
+    fiber_func get_callback() const { return cb_; }
 public:
     class Comparator{
     public:
@@ -55,7 +57,7 @@ public:
     Timer::ptr add_timer(bool recurring, uint64_t ms, fiber_func cb, std::weak_ptr<void> cond, void* args = nullptr);
     bool del_timer(Timer::ptr timer);
     uint64_t get_next_timer() const;
-    void get_expired_timers(std::vector<Timer::ptr> expired_timers);
+    void get_expired_timers(std::vector<Timer::ptr>& expired_timers);
     bool empty() const;
 private:
     bool add_timer(Timer::ptr timer);

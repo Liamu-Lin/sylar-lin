@@ -12,10 +12,6 @@ Timer::Timer(bool recurring, uint64_t ms, fiber_func cb, void* args, TimerManage
     next_expiration_ = sylar::TimeUtil::get_time_ms() + period_time_;
 }
 
-void Timer::run(){
-    cb_(args_);
-}
-
 bool Timer::cancel(){
     bool ret = false;
     if(manager_){
@@ -115,13 +111,12 @@ uint64_t TimerManager::get_next_timer() const{
         return timer->next_expiration_ - now;
 }
 
-void TimerManager::get_expired_timers(std::vector<Timer::ptr> expired_timers){
+void TimerManager::get_expired_timers(std::vector<Timer::ptr>& expired_timers){
     RWMutex::WLock lock(timers_rwmutex_);
     uint64_t now_time = TimeUtil::get_time_ms();
     Timer::ptr now_timer(new Timer(now_time));
     auto end = timers_.upper_bound(now_timer);
-
-    if(end == timers_.end())
+    if(end == timers_.begin())
         return;
     need_tickle_ = true;
     expired_timers = std::vector<Timer::ptr>(timers_.begin(), end);
