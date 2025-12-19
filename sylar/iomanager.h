@@ -12,7 +12,7 @@
 #include "timer.h"
 #include "mutex.h"
 
-#define SYLAR_IOMANAGER_TIMEOUT 1000
+#define SYLAR_IOMANAGER_TIMEOUT 3000
 
 namespace sylar{
 class IOManager;

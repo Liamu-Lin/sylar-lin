@@ -56,32 +56,38 @@ void func(void* arg){
     
 }
 
-void test_iomanager(sylar::IOManager* iom){
+void test_iomanager(){
+    sylar::IOManager* iom = sylar::IOManager::GetThis();
     SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) << "test_iomanager";
     iom->add_fiber(func);
 }
 
 sylar::Timer::ptr s_timer;
-void test_timer(sylar::IOManager* iom){
-    s_timer = iom->add_timer(true, 1000, [](void*){
+const char* str = "Hello Timer: ";
+void test_timer(){
+    sylar::IOManager* iom = sylar::IOManager::GetThis();
+    s_timer = iom->add_timer(true, 1000, [](void* args){
         static int i = 0;
-        SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) << "hello timer i=" << i;
+        SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) << (const char*)args << i;
         if(++i == 3) {
-            //s_timer->reset(2000, true);
+            s_timer->reset(2000, true);
+            //s_timer->cancel();
+        }
+        else if(i == 5) {
             s_timer->cancel();
         }
+    }, (void*)str);
+    auto timer2 = iom->add_timer(false, 11000, [](void* args){
+        SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) << "Hello Timer2";
     }, nullptr);
-    SYLAR_ASSERT(s_timer);
-    SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) 
-        << " args=" << s_timer->get_args();
 }
 
 int main(){
     std::shared_ptr<sylar::IOManager> iom(new sylar::IOManager(2, "iomanager_test"));
 
-    test_iomanager(iom.get());
+    test_iomanager();
 
-    test_timer(iom.get());
+    test_timer();
     
 
     return 0;

@@ -37,7 +37,7 @@ protected:
 private:
     // schedule fibers, run in each thread
     void schedule();
-    void SetThis();
+    void SetThis(Scheduler* scheduler);
 private:
     struct ScheduledTask{
         pid_t thread_;

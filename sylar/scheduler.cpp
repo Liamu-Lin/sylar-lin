@@ -1,4 +1,5 @@
 #include "scheduler.h"
+#include "hook.h"
 #include "macro.h"
 
 namespace sylar{
@@ -9,17 +10,17 @@ static thread_local Scheduler* g_scheduler = nullptr;
 Scheduler* Scheduler::GetThis(){
     return g_scheduler;
 }
-void Scheduler::SetThis(){
-    g_scheduler = this;
+void Scheduler::SetThis(Scheduler* scheduler){
+    g_scheduler = scheduler;
 }
 
 Scheduler::Scheduler(size_t thread_count, const std::string& name):
     name_(name),
     thread_count_(thread_count){
-    ;
+    SetThis(this);
 }
 Scheduler::~Scheduler(){
-    ;
+    SetThis(nullptr);
 }
 
 void Scheduler::add_fiber(std::shared_ptr<Fiber> fiber, pid_t thread){
@@ -33,6 +34,7 @@ void Scheduler::add_fiber(sylar::fiber_func func, void* args, pid_t thread){
     MutexType::Lock lock(mutex_);
     tasks_.push_back(task);
 }
+
 
 void Scheduler::start(){
     //SetThis();
@@ -69,7 +71,8 @@ void Scheduler::stop(){
 }
 
 void Scheduler::schedule(){
-    SetThis();
+    SetThis(this);
+    set_hook_enable(true);
     t_is_scheduler_thread = true;
 
     std::shared_ptr<Fiber> idle_fiber(new Fiber(std::bind(&Scheduler::idle

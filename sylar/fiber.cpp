@@ -174,6 +174,19 @@ void Fiber::fiber_yield(){
 
     swap_fiber(cur_fiber, next_fiber);
 }
+void Fiber::fiber_sleep(){
+    FiberEnvironment& env = t_fiber_env;
+    std::shared_ptr<Fiber> cur_fiber = env.get_current_fiber();
+    env.pop_fiber();
+    std::shared_ptr<Fiber> next_fiber = env.get_current_fiber();
+    if(cur_fiber->get_state() == FiberState::RUNNING)
+        cur_fiber->set_state(FiberState::SLEEPING);
+    SYLAR_ASSERT(next_fiber->get_state() == FiberState::SUSPENDED);
+    next_fiber->set_state(FiberState::RUNNING);
+
+    swap_fiber(cur_fiber, next_fiber);
+}
+
 
 void Fiber::fiber_func_wrapper(Fiber* fiber){
     try{
