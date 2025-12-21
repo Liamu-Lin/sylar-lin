@@ -174,6 +174,10 @@ void Fiber::fiber_yield(){
 
     swap_fiber(cur_fiber, next_fiber);
 }
+void Fiber::fiber_wakeup(){
+    if(state_ == FiberState::SLEEPING)
+        set_state(FiberState::SUSPENDED);
+}
 void Fiber::fiber_sleep(){
     FiberEnvironment& env = t_fiber_env;
     std::shared_ptr<Fiber> cur_fiber = env.get_current_fiber();

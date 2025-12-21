@@ -38,6 +38,7 @@ public:
     uint32_t get_events() const;
 private:
     bool add_event(uint32_t event, int epoll_fd, fiber_func func, void* args);
+    bool add_event(uint32_t event, int epoll_fd, std::shared_ptr<Fiber> fiber);
     bool del_event(uint32_t event, int epoll_fd);
     bool cancel_event(uint32_t event, int epoll_fd);
 private:
@@ -58,6 +59,7 @@ public:
     ~IOManager();
 
     bool add_event(int fd, uint32_t event, fiber_func func, void* args = nullptr);
+    bool add_event(int fd, uint32_t event, std::shared_ptr<Fiber> fiber);
     bool del_event(int fd, uint32_t event);
     bool cancel_event(int fd, uint32_t event);
     bool cancel_all(int fd);

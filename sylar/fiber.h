@@ -18,11 +18,6 @@
 
 #define SYLAR_FIBER_MAX_CALL_STACK_DEPTH  128
 
-extern "C"{
-    unsigned int sleep(unsigned int seconds);
-    int usleep(useconds_t usec);
-}
-
 namespace sylar{
 class Fiber;
 class FiberContext;
@@ -120,6 +115,7 @@ public:
 
     void fiber_resume();
     static void fiber_yield();
+    void fiber_wakeup();
     static void fiber_sleep();
 
     FiberState get_state() const { return state_; }
@@ -132,8 +128,6 @@ private:
     friend void FiberMem::change_occupier(std::shared_ptr<Fiber> new_occupier);
     friend void make_context(std::shared_ptr<Fiber> fiber);
     friend void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
-    friend unsigned int ::sleep(unsigned int seconds);
-    friend int ::usleep(useconds_t usec);
 private:
     // init main fiber
     Fiber();

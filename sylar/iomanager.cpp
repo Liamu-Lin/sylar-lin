@@ -49,6 +49,30 @@ bool IOEvent::add_event(uint32_t event, int epoll_fd, fiber_func func, void* arg
     }
     return true;
 }
+bool IOEvent::add_event(uint32_t event, int epoll_fd, std::shared_ptr<Fiber> fiber){
+    Mutex::Lock lock(mutex_);
+    uint32_t old_events = events_;
+    int op = events_ ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
+
+    events_ |= event;
+    if(event & EPOLLIN)
+        read_.set(Scheduler::GetThis(), fiber);
+    if(event & EPOLLOUT)
+        write_.set(Scheduler::GetThis(), fiber);
+
+    epoll_event ep_event;
+    ep_event.events = EPOLLET | events_;
+    ep_event.data.ptr = this;
+    int rt = epoll_ctl(epoll_fd, op, fd_, &ep_event);
+    if(rt){
+        SYLAR_LOG(LoggerMgr.get_logger("system"), LogLevel::Level::ERROR)
+            << "epoll_ctl add/mod error rt=" << rt
+            << " fd=" << fd_ << " event=" << event;
+        events_ = old_events;
+        return false;
+    }
+    return true;
+}
 bool IOEvent::del_event(uint32_t event, int epoll_fd){
     Mutex::Lock lock(mutex_);
     if((events_ & event) == 0)
@@ -115,6 +139,31 @@ bool IOManager::add_event(int fd, uint32_t event, fiber_func func, void* args){
     else{
         io_event.reset(new IOEvent{fd});
         ret = io_event->add_event(event, epoll_fd_, func, args);
+        RWMutex::WLock lock(rw_mutex_);
+        fd_event_map_[fd] = io_event;
+    }
+
+    if(ret == false)
+        return false;
+    pending_event_count_ += 1;
+    return true;
+}
+bool IOManager::add_event(int fd, uint32_t event, std::shared_ptr<Fiber> fiber){
+    bool ret;
+    std::shared_ptr<IOEvent> io_event;
+    {
+        RWMutex::RLock lock(rw_mutex_);
+        auto it = fd_event_map_.find(fd);
+        if(it != fd_event_map_.end())
+            io_event = it->second;
+    }
+    if(io_event){
+        RWMutex::WLock lock(rw_mutex_);
+        ret = io_event->add_event(event, epoll_fd_, fiber);
+    }
+    else{
+        io_event.reset(new IOEvent{fd});
+        ret = io_event->add_event(event, epoll_fd_, fiber);
         RWMutex::WLock lock(rw_mutex_);
         fd_event_map_[fd] = io_event;
     }
