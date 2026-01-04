@@ -10,7 +10,7 @@
 
 namespace sylar{
 
-class Semaphore{
+class Semaphore : public Noncopyable{
 public:
     Semaphore(unsigned int count);
     ~Semaphore();
