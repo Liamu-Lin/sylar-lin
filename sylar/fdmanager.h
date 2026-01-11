@@ -13,6 +13,8 @@ namespace sylar{
 
 class FdCtx{
 public:
+    typedef std::shared_ptr<FdCtx> ptr;
+public:
     FdCtx(int fd);
 
     bool is_inited() const { return is_inited_; }

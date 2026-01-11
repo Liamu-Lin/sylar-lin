@@ -2,9 +2,22 @@
 
 namespace sylar{
 
-std::shared_ptr<Logger> g_logger = LoggerMgr.get_logger("system");
+static std::shared_ptr<Logger> g_logger = LoggerMgr.get_logger("system");
 
-std::shared_ptr<Address> Address::create(const sockaddr* addr){
+Address::ptr Address::create(int family){
+    switch(family){
+        case AF_INET:
+            return std::make_shared<IPv4Address>();
+        case AF_INET6:
+            return std::make_shared<IPv6Address>();
+        case AF_UNIX:
+            return std::make_shared<UnixAddress>();
+        default:
+            return std::make_shared<UnknownAddress>(family);
+    }
+    return nullptr;
+}
+Address::ptr Address::create(const sockaddr* addr){
     if(!addr)
         return nullptr;
     switch(addr->sa_family){

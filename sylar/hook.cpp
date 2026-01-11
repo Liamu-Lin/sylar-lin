@@ -390,6 +390,24 @@ int ioctl(int d, unsigned long int request, ...) {
 }
 
 int getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen) {
+    if(!sylar::t_hook_enable) {
+        return getsockopt_f(sockfd, level, optname, optval, optlen);
+    }
+    if(level == SOL_SOCKET) {
+        if(optname == SO_RCVTIMEO || optname == SO_SNDTIMEO) {
+            std::shared_ptr<sylar::FdCtx> ctx = sylar::FdMgr.get_fdctx(sockfd);
+            if(ctx) {
+                uint64_t timeout = ctx->get_timeout(optname);
+                timeval* v = (timeval*)optval;
+                v->tv_sec = timeout / 1000;
+                v->tv_usec = (timeout % 1000) * 1000;
+                if(optlen) {
+                    *optlen = sizeof(timeval);
+                }
+                return 0;
+            }
+        }
+    }
     return getsockopt_f(sockfd, level, optname, optval, optlen);
 }
 

@@ -23,7 +23,8 @@ namespace sylar{
 class Address{
 public:
     typedef std::shared_ptr<Address> ptr;
-    static std::shared_ptr<Address> create(const sockaddr* addr);
+    static Address::ptr create(int family);
+    static Address::ptr create(const sockaddr* addr);
     // return all addresses which match the conditions
     // ipv6 -- [host]:port/service
     // ipv4 -- host:port/service
@@ -72,7 +73,7 @@ public:
     IPv4Address();
     IPv4Address(const sockaddr_in& address);
     IPv4Address(const char* address, uint16_t port = 0);
-    IPv4Address(uint32_t address = INADDR_ANY, uint16_t port = 0);
+    IPv4Address(uint32_t address, uint16_t port = 0);
 
     sockaddr* get_addr() override;
     const sockaddr* get_addr() const override;

@@ -27,6 +27,7 @@ set(LIB_SRC
     sylar/hook.cpp
     sylar/fdmanager.cpp
     sylar/address.cpp
+    sylar/socket.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -84,6 +85,11 @@ add_executable(test_address tests/test_address.cpp)
 force_redefine_file_macro_for_sources(test_address)
 add_dependencies(test_address sylar)
 target_link_libraries(test_address ${LIBS})
+
+add_executable(test_socket tests/test_socket.cpp)
+force_redefine_file_macro_for_sources(test_socket)
+add_dependencies(test_socket sylar)
+target_link_libraries(test_socket ${LIBS})
 
 #add_executable(test_routine tests/test_routine.cpp)
 #force_redefine_file_macro_for_sources(test_routine)
