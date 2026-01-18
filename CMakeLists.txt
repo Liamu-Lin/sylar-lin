@@ -28,6 +28,7 @@ set(LIB_SRC
     sylar/fdmanager.cpp
     sylar/address.cpp
     sylar/socket.cpp
+    sylar/bytearry.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -90,6 +91,11 @@ add_executable(test_socket tests/test_socket.cpp)
 force_redefine_file_macro_for_sources(test_socket)
 add_dependencies(test_socket sylar)
 target_link_libraries(test_socket ${LIBS})
+
+add_executable(test_bytearray tests/test_bytearray.cpp)
+force_redefine_file_macro_for_sources(test_bytearray)
+add_dependencies(test_bytearray sylar)
+target_link_libraries(test_bytearray ${LIBS})
 
 #add_executable(test_routine tests/test_routine.cpp)
 #force_redefine_file_macro_for_sources(test_routine)

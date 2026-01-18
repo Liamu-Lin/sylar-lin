@@ -23,12 +23,27 @@
 namespace sylar{
 
 pid_t get_thread_id();
-//TODO
 fid_t get_fiber_id();
 
 
 void backtrace(std::vector<std::string>& buffer, int size, int skip = 0);
 std::string backtrace_symbols(int size, int skip = 0, const std::string& prefix = "");
+
+namespace Endian{
+    uint8_t host_to_network(uint8_t value);
+    uint16_t host_to_network(uint16_t value);
+    uint32_t host_to_network(uint32_t value);
+    uint64_t host_to_network(uint64_t value);
+
+    int8_t network_to_host(int8_t value);
+    uint8_t network_to_host(uint8_t value);
+    int16_t network_to_host(int16_t value);
+    uint16_t network_to_host(uint16_t value);
+    int32_t network_to_host(int32_t value);
+    uint32_t network_to_host(uint32_t value);
+    int64_t network_to_host(int64_t value);
+    uint64_t network_to_host(uint64_t value);
+}
 
 namespace TimeUtil{
     uint64_t get_time_ms();
