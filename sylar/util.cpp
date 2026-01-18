@@ -1,6 +1,7 @@
 #include "util.h"
 #include "fiber.h"
 #include <thread>
+#include <arpa/inet.h>
 
 namespace sylar{
 
@@ -33,6 +34,46 @@ std::string backtrace_symbols(int size, int skip, const std::string& prefix){
         ss << prefix << bt[i] << std::endl;
     }
     return ss.str();
+}
+
+namespace Endian{
+    uint8_t host_to_network(uint8_t value){
+        return value;
+    }
+    uint16_t host_to_network(uint16_t value){
+        return htons(value);
+    }
+    uint32_t host_to_network(uint32_t value){
+        return htonl(value);
+    }
+    uint64_t host_to_network(uint64_t value){
+        return (((uint64_t)htonl(value & 0xFFFFFFFFULL)) << 32) | htonl(value >> 32);
+    }
+
+    uint8_t network_to_host(uint8_t value){
+        return value;
+    }
+    uint16_t network_to_host(uint16_t value){
+        return ntohs(value);
+    }
+    uint32_t network_to_host(uint32_t value){
+        return ntohl(value);
+    }
+    uint64_t network_to_host(uint64_t value){
+        return (((uint64_t)ntohl(value & 0xFFFFFFFFULL)) << 32) | ntohl(value >> 32);
+    }
+    int8_t network_to_host(int8_t value){
+        return value;
+    }
+    int16_t network_to_host(int16_t value){
+        return network_to_host((uint16_t)value);
+    }
+    int32_t network_to_host(int32_t value){
+        return network_to_host((uint32_t)value);
+    }
+    int64_t network_to_host(int64_t value){
+        return network_to_host((uint64_t)value);
+    }
 }
 
 namespace TimeUtil{
