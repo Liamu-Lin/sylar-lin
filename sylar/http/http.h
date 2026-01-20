@@ -1,6 +1,15 @@
 #ifndef __HTTP_HTTP_H__
 #define __HTTP_HTTP_H__
 
+#include "type.h"
+
+#include <boost/lexical_cast.hpp>
+#include <stdint.h>
+#include <memory>
+#include <string>
+#include <vector>
+#include <map>
+
 namespace sylar {
 namespace http{
 
@@ -47,7 +56,7 @@ namespace http{
   XX(31, LINK,        LINK)         \
   XX(32, UNLINK,      UNLINK)       \
   /* icecast */                     \
-  XX(33, SOURCE,      SOURCE)       \
+  XX(33, SOURCE,      SOURCE)
 
 // Status Codes
 #define HTTP_STATUS_MAP(XX)                                                 \
@@ -109,10 +118,11 @@ namespace http{
   XX(507, INSUFFICIENT_STORAGE,            Insufficient Storage)            \
   XX(508, LOOP_DETECTED,                   Loop Detected)                   \
   XX(510, NOT_EXTENDED,                    Not Extended)                    \
-  XX(511, NETWORK_AUTHENTICATION_REQUIRED, Network Authentication Required) \
+  XX(511, NETWORK_AUTHENTICATION_REQUIRED, Network Authentication Required)
+
 
 enum class HttpMethod{
-#define XX(code, name, string) HTTP_##name = code,
+#define XX(code, name, string) name = code,
     HTTP_METHOD_MAP(XX)
 #undef XX
     HTTP_INVALID_METHOD
@@ -122,9 +132,166 @@ enum class HttpStatus{
 #define XX(code, name, string) name = code,
     HTTP_STATUS_MAP(XX)
 #undef XX
+    HTTP_INVALID_STATUS
+};
+
+typedef std::map<std::string, std::string, sylar::CaseInsensitiveLess> CaseInsensitiveStr2StrMap;
+typedef CaseInsensitiveStr2StrMap HttpHeaders;
+typedef CaseInsensitiveStr2StrMap HttpParams;
+typedef CaseInsensitiveStr2StrMap HttpCookies;
+template<typename T>
+static T get_value_as(const CaseInsensitiveStr2StrMap& map, const std::string& key, const T& default_value = T()){
+    auto it = map.find(key);
+    if(it == map.end())
+        return default_value;
+    try{
+        return boost::lexical_cast<T>(it->second);
+    }catch(...){
+        return default_value;
+    }
+}
+
+class HttpRequest{
+public:
+    typedef std::shared_ptr<HttpRequest> ptr;
+public:
+    HttpRequest(uint8_t version = 0x11, bool auto_close = true);
+
+    bool is_auto_close() const { return auto_close_; }
+    void set_auto_close(bool v);
+
+    bool is_websocket() const { return is_websocket_; }
+    void set_websocket(bool v);
+
+    HttpMethod get_method() const { return method_; }
+    void set_method(HttpMethod v) { method_ = v; }
+
+    uint8_t get_version() const { return version_; }
+    void set_version(uint8_t v) { version_ = v; }
+
+
+    const std::string& get_path() const { return path_; }
+    void set_path(const std::string& v) { path_ = v; }
+
+    const std::string& get_query() const { return query_; }
+    void set_query(const std::string& v) { query_ = v; }
+
+    const std::string& get_fragment() const { return fragment_; }
+    void set_fragment(const std::string& v) { fragment_ = v; }
+
+    const std::string& get_body() const { return body_; }
+    void set_body(const std::string& v);
+
+    const HttpHeaders& get_headers() const { return headers_; }
+    void set_headers(const HttpHeaders& v) { headers_ = v; }
+
+    const HttpParams& get_params() const { return params_; }
+    void set_params(const HttpParams& v) { params_ = v; }
+
+    const HttpCookies& get_cookies() const { return cookies_; }
+    void set_cookies(const HttpCookies& v) { cookies_ = v; }
+
+    std::string get_header(const std::string& name) const;
+    void del_header(const std::string& name);
+    void set_header(const std::string& name, const std::string& value);
+
+    std::string get_param(const std::string& name) const;
+    void del_param(const std::string& name);
+    void set_param(const std::string& name, const std::string& value);
+
+    std::string get_cookie(const std::string& name) const;
+    void del_cookie(const std::string& name);
+    void set_cookie(const std::string& name, const std::string& value);
+
+    template<typename T>
+    T get_header_as(const std::string& name, const T& default_value = T()) const {
+        return sylar::http::get_value_as<T>(headers_, name, default_value);
+    }
+    template<typename T>
+    T get_param_as(const std::string& name, const T& default_value = T()) const {
+        return sylar::http::get_value_as<T>(params_, name, default_value);
+    }
+    template<typename T>
+    T get_cookie_as(const std::string& name, const T& default_value = T()) const {
+        return sylar::http::get_value_as<T>(cookies_, name, default_value);
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const HttpRequest& request);
+private:
+    void init_headers();
+    void init_params();
+    void init_cookies();
+private:
+    bool auto_close_;
+    bool is_websocket_;
+    uint8_t parse_flags_;
+
+    HttpMethod method_;
+    uint8_t version_;
+
+    std::string path_;
+    std::string query_;
+    std::string fragment_;
+    std::string body_;
+
+    HttpHeaders headers_;
+    HttpParams params_;
+    HttpCookies cookies_;
+};
+
+class HttpResponse{
+public:
+    typedef std::shared_ptr<HttpResponse> ptr;
+public:
+    HttpResponse(uint8_t version = 0x11, bool close = false);
+
+    bool is_close() const { return close_; }
+    void set_close(bool v);
+
+    bool is_websocket() const { return is_websocket_; }
+    void set_websocket(bool v);
+
+    HttpStatus get_status() const { return status_; }
+    void set_status(HttpStatus v) { status_ = v; }
+
+    uint8_t get_version() const { return version_; }
+    void set_version(uint8_t v) { version_ = v; }
+
+    const std::string& get_body() const { return body_; }
+    void set_body(const std::string& v);
+
+    const HttpHeaders& get_headers() const { return headers_; }
+    void set_headers(const HttpHeaders& v) { headers_ = v; }
+
+    std::string get_header(const std::string& name) const;
+    void del_header(const std::string& name);
+    void set_header(const std::string& name, const std::string& value);
+
+    template<typename T>
+    T get_header_as(const std::string& name, const T& default_value = T()) const {
+        return sylar::http::get_value_as<T>(headers_, name, default_value);
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const HttpResponse& response);
+private:
+    void init_headers();
+private:
+    bool close_;
+    bool is_websocket_;    
+
+    uint8_t version_;
+    HttpStatus status_;
+    std::string body_;
+    HttpHeaders headers_;
+    std::vector<std::string> cookies_;
 };
 
 
+
+HttpMethod string_to_http_method(const std::string& m);
+HttpMethod string_to_http_method(const char* m);
+const char* http_method_to_string(const HttpMethod& m);
+const char* http_status_to_string(const HttpStatus& s); 
 
 }
 }
