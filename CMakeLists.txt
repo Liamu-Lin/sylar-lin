@@ -30,6 +30,9 @@ set(LIB_SRC
     sylar/socket.cpp
     sylar/bytearry.cpp
     sylar/http/http.cpp
+    sylar/http/http11_parser.rl.cpp
+    sylar/http/httpclient_parser.rl.cpp
+    sylar/http/http_parser.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -102,6 +105,11 @@ add_executable(test_http tests/test_http.cpp)
 force_redefine_file_macro_for_sources(test_http)
 add_dependencies(test_http sylar)
 target_link_libraries(test_http ${LIBS})
+
+add_executable(test_http_parser tests/test_http_parser.cpp)
+force_redefine_file_macro_for_sources(test_http_parser)
+add_dependencies(test_http_parser sylar)
+target_link_libraries(test_http_parser ${LIBS})
 
 #add_executable(test_routine tests/test_routine.cpp)
 #force_redefine_file_macro_for_sources(test_routine)

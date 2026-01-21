@@ -254,6 +254,9 @@ public:
     HttpStatus get_status() const { return status_; }
     void set_status(HttpStatus v) { status_ = v; }
 
+    const std::string& get_reason() const { return reason_; }
+    void set_reason(const std::string& v) { reason_ = v; }
+
     uint8_t get_version() const { return version_; }
     void set_version(uint8_t v) { version_ = v; }
 
@@ -281,6 +284,7 @@ private:
 
     uint8_t version_;
     HttpStatus status_;
+    std::string reason_;
     std::string body_;
     HttpHeaders headers_;
     std::vector<std::string> cookies_;
