@@ -382,7 +382,7 @@ void ByteArray::clear(){
         delete cur;
         cur = next;
     }
-    cur = read_cur_ = write_cur_ = nullptr;
+    root_ = read_cur_ = write_cur_ = nullptr;
     write_pos_ = read_pos_ = capacity_ = 0;
 }
 

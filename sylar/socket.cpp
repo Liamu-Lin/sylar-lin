@@ -59,7 +59,7 @@ Address::ptr Socket::get_local_address() const{
     if(getsockname(sockfd_, local_address_->get_addr(), &addrlen)){
         local_address_.reset();
         SYLAR_LOG(g_logger, LogLevel::Level::ERROR)
-            << "Socket::get_local_address getsockname error"
+            << "Socket::get_local_address getsockname error" << " sock=" << sockfd_
             << " errno=" << errno << " errstr=" << strerror(errno);
     }
     return local_address_;
@@ -226,14 +226,17 @@ bool Socket::close(){
     is_connected_ = false;
     if(sockfd_ == -1)
         return true;
+    std::string sock_info = to_string();
     int rt = ::close(sockfd_);
     if(rt){
         SYLAR_LOG(g_logger, LogLevel::Level::ERROR)
             << "Socket::close close error"
-            << " sock=" << to_string()
+            << " sock=" << sock_info
             << " errno=" << errno << " errstr=" << strerror(errno);
         return false;
     }
+    SYLAR_LOG(g_logger, LogLevel::Level::DEBUG)
+        << "Socket::close close sock=" << sock_info;
     return true;
 }
 

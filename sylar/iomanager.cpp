@@ -3,6 +3,7 @@
 
 namespace sylar{
 
+static Logger::ptr g_logger = LoggerMgr.get_logger("system");
 
 void EventContext::reset(){
     scheduler_ = nullptr;
@@ -90,7 +91,7 @@ bool IOEvent::del_event(uint32_t event, int epoll_fd){
     ep_event.data.ptr = this;
     int rt = epoll_ctl(epoll_fd, op, fd_, &ep_event);
     if(rt){
-        SYLAR_LOG(LoggerMgr.get_logger("system"), LogLevel::Level::ERROR)
+        SYLAR_LOG(g_logger, LogLevel::Level::ERROR)
             << "epoll_ctl del/mod error rt=" << rt
             << " fd=" << fd_ << " event=" << event;
         return false;

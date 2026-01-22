@@ -110,6 +110,7 @@ static void make_context(std::shared_ptr<Fiber> fiber);
 class Fiber : public std::enable_shared_from_this<Fiber> {
 public:
     Fiber(fiber_func func, void* args, std::shared_ptr<FiberSharedStackPool> stack_poll = nullptr, size_t stack_size = SYLAR_FIBER_DEFAULT_STACK_SIZE);
+    ~Fiber();
 
     bool reset(fiber_func func, void* args);
 
