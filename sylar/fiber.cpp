@@ -8,6 +8,8 @@ namespace sylar{
 static thread_local FiberEnvironment t_fiber_env;
 static thread_local size_t t_fiber_cnt = 0;
 
+static Logger::ptr g_logger = LoggerMgr.get_logger("system");
+
 void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
 
 FiberMem::FiberMem(size_t size):
@@ -133,6 +135,10 @@ Fiber::Fiber():
     save_buffer_.reset();
 }
 
+Fiber::~Fiber(){
+    SYLAR_LOG(g_logger, LogLevel::Level::DEBUG) << "Fiber::~Fiber id=" << id_;
+}
+
 bool Fiber::reset(fiber_func func, void* args){
     if(is_main_fiber_ || running_mem_ == nullptr)
         return false;
@@ -200,7 +206,7 @@ void Fiber::fiber_func_wrapper(Fiber* fiber){
     }
     catch(...){
         fiber->set_state(FiberState::EXCEPTION);
-        SYLAR_LOG(LoggerMgr.get_logger("system"), LogLevel::Level::ERROR)
+        SYLAR_LOG(g_logger, LogLevel::Level::ERROR)
             << "Fiber Except: fiber_func_wrapper";
     }
 
