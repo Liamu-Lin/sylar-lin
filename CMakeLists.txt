@@ -34,6 +34,7 @@ set(LIB_SRC
     sylar/http/httpclient_parser.rl.cpp
     sylar/http/http_parser.cpp
     sylar/tcp_server.cpp
+    sylar/stream.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})

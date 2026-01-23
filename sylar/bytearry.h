@@ -69,6 +69,7 @@ public:
     void read_from_file(const std::string& filename);
 
     void set_read_position(size_t pos);
+    void set_write_position(size_t pos);
     size_t get_read_position() const { return read_pos_; }
     size_t get_write_position() const { return write_pos_; }
     size_t get_size() const { return write_pos_; }
