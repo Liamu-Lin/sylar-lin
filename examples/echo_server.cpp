@@ -36,7 +36,7 @@ private:
 
 void run(void*){
     EchoServer::ptr es(new EchoServer);
-    sylar::Address::ptr addr = sylar::Address::lookup_address("127.0.0.1:8020");
+    sylar::Address::ptr addr = sylar::Address::lookup_address("0.0.0.0:8020");
     es->bind(addr);
     es->start();
 }
