@@ -20,7 +20,7 @@ public:
     int has_error();
     void set_errno(int v) { errno_ = v; }
     uint64_t get_content_length();
-    HttpRequest::ptr get_request() const { return request_; }
+    HttpRequest::ptr get_request() const { request_->init_headers(); return request_; }
     const http_parser& get_parser() const { return parser_; }
 
     static uint64_t get_request_buffer_size();

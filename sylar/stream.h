@@ -36,6 +36,8 @@ public:
 
     size_t write(const void* buffer, size_t length) override;
     size_t write(ByteArray::ptr ba, size_t length) override;
+
+    void close(){ socket_->close(); }
 private:
     Socket::ptr socket_;
 };

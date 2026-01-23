@@ -68,7 +68,9 @@ size_t SocketStream::read(void* buffer, size_t length){
     if(!socket_ || !socket_->is_connected())
         throw std::logic_error("SocketStream::read socket is null");
     int ret = socket_->recv(buffer, length);
-    if(ret <= 0)
+    if(ret == 0)
+        throw std::runtime_error("SocketStream::read socket closed or EOF");
+    else if(ret < 0)
         throw std::runtime_error("SocketStream::read failed");
     return ret;
 }

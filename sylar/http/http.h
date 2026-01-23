@@ -217,10 +217,12 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& os, const HttpRequest& request);
-private:
+
     void init_headers();
-    void init_params();
-    void init_cookies();
+private:
+    // TODO
+    //void init_params();
+    //void init_cookies();
 private:
     bool auto_close_;
     bool is_websocket_;
@@ -276,7 +278,7 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& os, const HttpResponse& response);
-private:
+
     void init_headers();
 private:
     bool close_;

@@ -56,7 +56,6 @@ HttpRequest::HttpRequest(uint8_t version, bool auto_close):
 }
 
 void HttpRequest::init_headers(){
-    headers_.clear();
     if(!is_websocket())
         set_header("connection", is_auto_close() ? "close" : "keep-alive");
 }
@@ -150,7 +149,6 @@ HttpResponse::HttpResponse(uint8_t version, bool close):
 }
 
 void HttpResponse::init_headers(){
-    headers_.clear();
     if(!is_websocket())
         set_header("connection", is_close() ? "close" : "keep-alive");
 }
