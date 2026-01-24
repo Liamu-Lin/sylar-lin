@@ -1,4 +1,5 @@
 #include "http/http_session.h"
+#include "http/http_server.h"
 #include "tcp_server.h"
 #include "iomanager.h"
 
@@ -27,15 +28,24 @@ public:
 
 void test(void* arg = nullptr){
     EchoServer::ptr es(new EchoServer);
+    es->set_name("sylar_http_session");
     sylar::Address::ptr addr = sylar::Address::lookup_address("0.0.0.0:8020");
     es->bind(addr);
     es->start();
 }
 
+void test_server(void* arg = nullptr){
+    sylar::http::HttpServer::ptr server(new sylar::http::HttpServer);
+    server->set_name("sylar_http_server");
+    sylar::Address::ptr addr = sylar::Address::lookup_address("0.0.0.0:8030");
+    server->bind(addr);
+    server->start();
+}
 
 int main(){
     sylar::IOManager iom(2);
     iom.add_fiber(test);
+    iom.add_fiber(test_server);
     iom.start();
     return 0;
 }

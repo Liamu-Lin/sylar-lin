@@ -36,6 +36,7 @@ set(LIB_SRC
     sylar/tcp_server.cpp
     sylar/stream.cpp
     sylar/http/http_session.cpp
+    sylar/http/http_server.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})

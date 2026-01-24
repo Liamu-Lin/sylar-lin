@@ -62,6 +62,7 @@ SocketStream::SocketStream(Socket::ptr sock)
     :socket_(sock) {
 }
 SocketStream::~SocketStream() {
+    socket_->close();
 }
 
 size_t SocketStream::read(void* buffer, size_t length){

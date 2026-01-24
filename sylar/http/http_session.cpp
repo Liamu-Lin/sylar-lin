@@ -17,14 +17,18 @@ HttpRequest::ptr HttpSession::recv_request(){
     uint64_t buff_size = HttpRequestParser::get_request_buffer_size();
     std::shared_ptr<char> buffer(new char[buff_size], [](char* ptr){delete[] ptr;});
     char* data = buffer.get();
-    size_t parsed = 0, read_len = 0;
     bool finished = false;
+    size_t unparsed = 0;
     do{
         try{
-            read_len += read(&data[read_len], buff_size - read_len);
+            size_t parsed = 0;
+            size_t read_len = read(&data[unparsed], buff_size - unparsed) + unparsed;
             finished = parser->execute(data, read_len, parsed);
-            if(parser->has_error() || read_len >= buff_size)
-                return nullptr;
+            // delete parsed data
+            unparsed = read_len - parsed;
+            memmove(data, data + parsed, unparsed);
+            if(parser->has_error() || unparsed >= buff_size)
+                throw std::runtime_error("Request parser error or exceed max buffer size");
         }catch(std::runtime_error& e){
             SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) << "HttpSession::recv_request read error " << e.what();
             return nullptr;
@@ -37,13 +41,12 @@ HttpRequest::ptr HttpSession::recv_request(){
     if(body_length){
         std::string body;
         body.resize(body_length);
-        if(read_len - parsed >= body_length)
-            memcpy(&body[0], data + parsed, body_length);
+        if(unparsed >= body_length)
+            memcpy(&body[0], data, body_length);
         else{
-            size_t readed = read_len - parsed;
-            memcpy(&body[0], data + parsed, readed);
+            memcpy(&body[0], data, unparsed);
             try{
-                read_fix_length(&body[readed], body_length - readed);
+                read_fix_length(&body[unparsed], body_length - unparsed);
             } catch(...){
                 SYLAR_LOG(g_logger, sylar::LogLevel::Level::WARN) << "HttpSession::recv_request read body error";
                 return nullptr;
