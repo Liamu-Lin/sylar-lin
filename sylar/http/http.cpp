@@ -139,7 +139,6 @@ std::ostream& operator<<(std::ostream& os, const HttpRequest& request){
 }
 
 
-
 HttpResponse::HttpResponse(uint8_t version, bool close):
     close_(close),
     is_websocket_(false),

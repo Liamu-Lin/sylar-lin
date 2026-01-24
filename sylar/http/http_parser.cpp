@@ -66,29 +66,28 @@ uint64_t HttpResponseParser::get_response_max_body_size(){
     return t_http_response_max_body_size;
 }
 
-
-static void on_request_method(void* data, const char* at, size_t length){
+static void nop_callback(void* _, const char* __, size_t ___){
+}
+void on_request_method(void* data, const char* at, size_t length){
     HttpRequestParser* parser = (HttpRequestParser*)data;
     HttpMethod m = string_to_http_method(std::string(at, length));
     parser->get_request()->set_method(m);
     if(m == HttpMethod::HTTP_INVALID_METHOD)
         parser->set_errno(0x1002); // invalid http method
 }
-static void on_request_uri(void* data, const char* at, size_t length){
-}
-static void on_request_fragment(void* data, const char* at, size_t length){
+void on_request_fragment(void* data, const char* at, size_t length){
     HttpRequestParser* parser = (HttpRequestParser*)data;
     parser->get_request()->set_fragment(std::string(at, length));
 }
-static void on_request_path(void* data, const char* at, size_t length){
+void on_request_path(void* data, const char* at, size_t length){
     HttpRequestParser* parser = (HttpRequestParser*)data;
     parser->get_request()->set_path(std::string(at, length));
 }
-static void on_request_query(void* data, const char* at, size_t length){
+void on_request_query(void* data, const char* at, size_t length){
     HttpRequestParser* parser = (HttpRequestParser*)data;
     parser->get_request()->set_query(std::string(at, length));
 }
-static void on_request_version(void* data, const char* at, size_t length){
+void on_request_version(void* data, const char* at, size_t length){
     HttpRequestParser* parser = (HttpRequestParser*)data;
     if(strncmp(at, "HTTP/1.1", length) == 0)
         parser->get_request()->set_version(0x11);
@@ -96,8 +95,6 @@ static void on_request_version(void* data, const char* at, size_t length){
         parser->get_request()->set_version(0x10);
     else
         parser->set_errno(0x1001); // invalid http version
-}
-static void on_request_header_done(void* data, const char* at, size_t length){
 }
 static void on_request_http_field(void* data, const char* field, size_t flen, const char* value, size_t vlen){
     HttpRequestParser* parser = (HttpRequestParser*)data;
@@ -112,25 +109,24 @@ HttpRequestParser::HttpRequestParser():
     http_parser_init(&parser_);
     parser_.data = this;
     parser_.request_method = on_request_method;
-    parser_.request_uri = on_request_uri;
+    parser_.request_uri = nop_callback;
     parser_.fragment = on_request_fragment;
     parser_.request_path = on_request_path;
     parser_.query_string = on_request_query;
     parser_.http_version = on_request_version;
-    parser_.header_done = on_request_header_done;
+    parser_.header_done = nop_callback;
     parser_.http_field = on_request_http_field;
 }
 
-size_t HttpRequestParser::execute(char* data, size_t len){
-    size_t offset = http_parser_execute(&parser_, data, len, 0);
-    memmove(data, data + offset, len - offset);
-    data[len - offset] = 0;
-    return offset;
+bool HttpRequestParser::execute(const char* data, size_t len, size_t& offset){
+    offset = http_parser_execute(&parser_, data, len, offset);
+    bool finished = http_parser_is_finished(&parser_);
+    return finished;
 }
-size_t HttpRequestParser::execute(std::string& data){
-    size_t offset = http_parser_execute(&parser_, data.c_str(), data.size(), 0);
-    data.erase(0, offset);
-    return offset;
+bool HttpRequestParser::execute(const std::string& data, size_t& offset){
+    offset = http_parser_execute(&parser_, data.c_str(), data.size(), offset);
+    bool finished = http_parser_is_finished(&parser_);
+    return finished;
 }
 
 int HttpRequestParser::is_finished(){
@@ -150,18 +146,16 @@ uint64_t HttpRequestParser::get_content_length(){
 
 
 
-static void on_response_reason(void* data, const char* at, size_t length){
+void on_response_reason(void* data, const char* at, size_t length){
     HttpResponseParser* parser = (HttpResponseParser*)data;
     parser->get_response()->set_reason(std::string(at, length));
 }
-static void on_response_status(void* data, const char* at, size_t length){
+void on_response_status(void* data, const char* at, size_t length){
     HttpResponseParser* parser = (HttpResponseParser*)data;
     HttpStatus s = (HttpStatus)atoi(std::string(at, length).c_str());
     parser->get_response()->set_status(s);
 }
-static void on_response_chunk(void* data, const char* at, size_t length){
-}
-static void on_response_version(void* data, const char* at, size_t length){
+void on_response_version(void* data, const char* at, size_t length){
     HttpResponseParser* parser = (HttpResponseParser*)data;
     if(strncmp(at, "HTTP/1.1", length) == 0)
         parser->get_response()->set_version(0x11);
@@ -170,50 +164,49 @@ static void on_response_version(void* data, const char* at, size_t length){
     else
         parser->set_errno(0x1001); // invalid http version
 }
-static void on_response_header_done(void* data, const char* at, size_t length){
-}
-static void on_response_last_chunk(void* data, const char* at, size_t length){
-}
-static void on_response_http_field(void* data, const char* field, size_t flen, const char* value, size_t vlen){
+void on_response_http_field(void* data, const char* field, size_t flen, const char* value, size_t vlen){
     HttpResponseParser* parser = (HttpResponseParser*)data;
     std::string f(field, flen);
     std::string v(value, vlen);
     parser->get_response()->set_header(f, v);
+    if(f == "transfer-encoding" && v == "chunked"){
+        parser->is_chunked_ = true;
+    }
 }
 
 
 HttpResponseParser::HttpResponseParser():
     response_(std::make_shared<HttpResponse>()),
-    errno_(0){
+    errno_(0),
+    is_chunked_(false){
     httpclient_parser_init(&parser_);
     parser_.data = this;
     parser_.reason_phrase = on_response_reason;
     parser_.status_code = on_response_status;
-    parser_.chunk_size = on_response_chunk;
+    parser_.chunk_size = nop_callback;
     parser_.http_version = on_response_version;
-    parser_.header_done = on_response_header_done;
-    parser_.last_chunk = on_response_last_chunk;
+    parser_.header_done = nop_callback;
+    parser_.last_chunk = nop_callback;
     parser_.http_field = on_response_http_field;
 }
 
-size_t HttpResponseParser::execute(char* data, size_t len, bool chunked){
-    if(chunked)
-        httpclient_parser_init(&parser_);
-    size_t offset = httpclient_parser_execute(&parser_, data, len, 0);
-    memmove(data, data + offset, len - offset);
-    data[len - offset] = 0;
-    return offset;
+bool HttpResponseParser::execute(const char* data, size_t len, size_t& offset){
+    offset = httpclient_parser_execute(&parser_, data, len, offset);
+    bool finished = httpclient_parser_is_finished(&parser_);
+    return finished;
 }
-size_t HttpResponseParser::execute(std::string& data){
-    size_t offset = httpclient_parser_execute(&parser_, data.c_str(), data.size(), 0);
-    data.erase(0, offset);
-    return offset;
-}
+bool HttpResponseParser::execute(const std::string& data, size_t& offset){
+    offset = httpclient_parser_execute(&parser_, data.c_str(), data.size(), offset);
+    bool finished = httpclient_parser_is_finished(&parser_);
+    return finished;
+}   
 
 int HttpResponseParser::is_finished(){
     return httpclient_parser_is_finished(&parser_);
 }
-
+bool HttpResponseParser::is_chunked(){
+    return is_chunked_ || parser_.chunked;
+}
 int HttpResponseParser::has_error(){
     return errno_ || httpclient_parser_has_error(&parser_);
 }

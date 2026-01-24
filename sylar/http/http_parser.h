@@ -14,8 +14,8 @@ public:
 public:
     HttpRequestParser();
 
-    size_t execute(char* data, size_t len);
-    size_t execute(std::string& data);
+    bool execute(const char* data, size_t len, size_t& offset);
+    bool execute(const std::string& data, size_t& offset);
     int is_finished();
     int has_error();
     void set_errno(int v) { errno_ = v; }
@@ -34,12 +34,15 @@ private:
 class HttpResponseParser{
 public:
     typedef std::shared_ptr<HttpResponseParser> ptr;
+private:
+    friend void on_response_http_field(void* data, const char* field, size_t flen, const char* value, size_t vlen);
 public:
     HttpResponseParser();
 
-    size_t execute(char* data, size_t len, bool chunked = false);
-    size_t execute(std::string& data);
+    bool execute(const char* data, size_t len, size_t& offset);
+    bool execute(const std::string& data, size_t& offset);
     int is_finished();
+    bool is_chunked();
     int has_error();
     void set_errno(int v) { errno_ = v; }
     uint64_t get_content_length();
@@ -52,6 +55,7 @@ private:
     httpclient_parser parser_;
     HttpResponse::ptr response_;
     int errno_;
+    bool is_chunked_;
 };
 
 
