@@ -56,7 +56,6 @@ HttpRequest::HttpRequest(uint8_t version, bool auto_close):
 }
 
 void HttpRequest::init_headers(){
-    headers_.clear();
     if(!is_websocket())
         set_header("connection", is_auto_close() ? "close" : "keep-alive");
 }
@@ -123,6 +122,11 @@ void HttpRequest::set_cookie(const std::string& name, const std::string& value){
     cookies_[name] = value;
 }
 
+std::string HttpRequest::to_string() const {
+    std::stringstream ss;
+    ss << *this;
+    return ss.str();
+}
 std::ostream& operator<<(std::ostream& os, const HttpRequest& request){
     os << http_method_to_string(request.method_) << ' '
        << request.path_
@@ -140,7 +144,6 @@ std::ostream& operator<<(std::ostream& os, const HttpRequest& request){
 }
 
 
-
 HttpResponse::HttpResponse(uint8_t version, bool close):
     close_(close),
     is_websocket_(false),
@@ -150,7 +153,6 @@ HttpResponse::HttpResponse(uint8_t version, bool close):
 }
 
 void HttpResponse::init_headers(){
-    headers_.clear();
     if(!is_websocket())
         set_header("connection", is_close() ? "close" : "keep-alive");
 }
@@ -191,6 +193,11 @@ void HttpResponse::set_header(const std::string& name, const std::string& value)
     headers_[name] = value;
 }
 
+std::string HttpResponse::to_string() const {
+    std::stringstream ss;
+    ss << *this;
+    return ss.str();
+}
 std::ostream& operator<<(std::ostream& os, const HttpResponse& response){
     os << "HTTP/" << (uint32_t(response.version_) >> 4) << '.' << (uint32_t(response.version_) & 0x0F)
        << ' ' << static_cast<uint32_t>(response.status_) << ' ' << http_status_to_string(response.status_) << "\r\n";

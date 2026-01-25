@@ -315,6 +315,16 @@ void ByteArray::set_read_position(size_t pos){
         read_cur_ = read_cur_->next;
 }
 
+void ByteArray::set_write_position(size_t pos){
+    if(pos > capacity_)
+        expand_capacity(pos - capacity_);
+    write_pos_ = pos;
+    write_cur_ = root_;
+    size_t block_idx = pos / block_size_;
+    while(block_idx--)
+        write_cur_ = write_cur_->next;
+}
+
 void ByteArray::get_read_buffers(std::vector<iovec>& buffers, size_t length) const{
     length = std::min(length, get_unread_size());
     if(length == 0)
@@ -369,7 +379,7 @@ std::string ByteArray::to_hex_string(){
         ss << std::hex;
         ss.width(2);
         ss.fill('0');
-        ss << (int)(byte);
+        ss << (uint32_t)byte << ' ';
     }
     set_read_position(old_read_pos);
     return ss.str();

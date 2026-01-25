@@ -13,24 +13,22 @@ private:
     void handle_client(sylar::Socket::ptr client, void*) override{
         SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) << "handle_client " << *client;
         sylar::ByteArray::ptr ba(new sylar::ByteArray);
-        char buf[4096];
-        while(true){
-            ba->clear();
-            int rt = client->recv(buf, sizeof(buf));
-            if(rt == 0){
-                SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) << "client close: " << *client;
-                break;
-            }else if(rt < 0){
-                SYLAR_LOG(g_logger, sylar::LogLevel::Level::ERROR) << "client error rt=" << rt
-                    << " errno=" << errno << " errstr=" << strerror(errno)
-                    << " client=" << *client;
+        while(is_stop_ == false){
+            std::vector<iovec> iovs;
+            ba->get_write_buffers(iovs, 4096);
+            int rt = client->recv(&iovs[0], iovs.size());
+            if(rt <= 0){
+                SYLAR_LOG(g_logger, sylar::LogLevel::Level::INFO) << "client close " << *client;
                 break;
             }
-            ba->write(buf, rt);
-            ba->read(buf, rt);
-            std::cout.write(buf, rt);
-            client->send(buf, rt);
+            ba->set_write_position(ba->get_write_position() + rt);
+            std::string str;
+            str.resize(rt+1);
+            ba->read(&str[0], rt);
+            std::cout << str;
         }
+        ba->set_read_position(0);
+        std::cout << ba->to_hex_string() << std::endl;
     }
 };
 
