@@ -223,9 +223,9 @@ bool Socket::reconnect(uint64_t timeout_ms){
 }
 
 bool Socket::close(){
-    is_connected_ = false;
-    if(sockfd_ == -1)
+    if(sockfd_ == -1 || !is_connected_)
         return true;
+    is_connected_ = false;
     std::string sock_info = to_string();
     int rt = ::close(sockfd_);
     if(rt){

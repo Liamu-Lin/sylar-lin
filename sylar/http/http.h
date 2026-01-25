@@ -216,6 +216,7 @@ public:
         return sylar::http::get_value_as<T>(cookies_, name, default_value);
     }
 
+    std::string to_string() const;
     friend std::ostream& operator<<(std::ostream& os, const HttpRequest& request);
 
     void init_headers();
@@ -277,6 +278,7 @@ public:
         return sylar::http::get_value_as<T>(headers_, name, default_value);
     }
 
+    std::string to_string() const;
     friend std::ostream& operator<<(std::ostream& os, const HttpResponse& response);
 
     void init_headers();

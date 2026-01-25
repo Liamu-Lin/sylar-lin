@@ -122,6 +122,11 @@ void HttpRequest::set_cookie(const std::string& name, const std::string& value){
     cookies_[name] = value;
 }
 
+std::string HttpRequest::to_string() const {
+    std::stringstream ss;
+    ss << *this;
+    return ss.str();
+}
 std::ostream& operator<<(std::ostream& os, const HttpRequest& request){
     os << http_method_to_string(request.method_) << ' '
        << request.path_
@@ -188,6 +193,11 @@ void HttpResponse::set_header(const std::string& name, const std::string& value)
     headers_[name] = value;
 }
 
+std::string HttpResponse::to_string() const {
+    std::stringstream ss;
+    ss << *this;
+    return ss.str();
+}
 std::ostream& operator<<(std::ostream& os, const HttpResponse& response){
     os << "HTTP/" << (uint32_t(response.version_) >> 4) << '.' << (uint32_t(response.version_) & 0x0F)
        << ' ' << static_cast<uint32_t>(response.status_) << ' ' << http_status_to_string(response.status_) << "\r\n";

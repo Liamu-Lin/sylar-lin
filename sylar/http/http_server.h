@@ -3,6 +3,7 @@
 
 #include "tcp_server.h"
 #include "http_session.h"
+#include "http_servlet.h"
 #include <memory>
 
 namespace sylar{
@@ -17,10 +18,13 @@ public:
 
     void set_keepalive(bool v) { is_keepalive_ = v; }
     bool is_keepalive() const { return is_keepalive_; }
+
+    ServletDispatch::ptr get_servlet_dispatch() const { return servlet_dispatch_; }
 protected:
     virtual void handle_client(Socket::ptr client, void*) override;
 private:
     bool is_keepalive_;
+    ServletDispatch::ptr servlet_dispatch_;
 };
 
 }
