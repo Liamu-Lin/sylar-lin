@@ -38,6 +38,7 @@ set(LIB_SRC
     sylar/http/http_session.cpp
     sylar/http/http_server.cpp
     sylar/http/http_servlet.cpp
+    sylar/http/http_connection.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -121,20 +122,25 @@ set(LIBS
 # add_dependencies(test_tcp_server sylar)
 # target_link_libraries(test_tcp_server ${LIBS})
 
-add_executable(echo_server examples/echo_server.cpp)
-force_redefine_file_macro_for_sources(echo_server)
-add_dependencies(echo_server sylar)
-target_link_libraries(echo_server ${LIBS})
+# add_executable(echo_server examples/echo_server.cpp)
+# force_redefine_file_macro_for_sources(echo_server)
+# add_dependencies(echo_server sylar)
+# target_link_libraries(echo_server ${LIBS})
 
-add_executable(test_http_session tests/test_http_session.cpp)
-force_redefine_file_macro_for_sources(test_http_session)
-add_dependencies(test_http_session sylar)
-target_link_libraries(test_http_session ${LIBS})
+# add_executable(test_http_session tests/test_http_session.cpp)
+# force_redefine_file_macro_for_sources(test_http_session)
+# add_dependencies(test_http_session sylar)
+# target_link_libraries(test_http_session ${LIBS})
 
 add_executable(test_http_server tests/test_http_server.cpp)
 force_redefine_file_macro_for_sources(test_http_server)
 add_dependencies(test_http_server sylar)
 target_link_libraries(test_http_server ${LIBS})
+
+add_executable(test_http_connection tests/test_http_connection.cpp)
+force_redefine_file_macro_for_sources(test_http_connection)
+add_dependencies(test_http_connection sylar)
+target_link_libraries(test_http_connection ${LIBS})
 
 #add_executable(test_routine tests/test_routine.cpp)
 #force_redefine_file_macro_for_sources(test_routine)

@@ -199,13 +199,10 @@ bool HttpResponseParser::execute(const std::string& data, size_t& offset){
     offset = httpclient_parser_execute(&parser_, data.c_str(), data.size(), offset);
     bool finished = httpclient_parser_is_finished(&parser_);
     return finished;
-}   
+}
 
 int HttpResponseParser::is_finished(){
     return httpclient_parser_is_finished(&parser_);
-}
-bool HttpResponseParser::is_chunked(){
-    return is_chunked_ || parser_.chunked;
 }
 int HttpResponseParser::has_error(){
     return errno_ || httpclient_parser_has_error(&parser_);
