@@ -11,9 +11,6 @@ set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O0 -g -std=c++11 \
 include_directories(./sylar)
 
 set(LIB_SRC
-    #sylar/coroutine.S
-    #sylar/coroutine.cpp
-
     sylar/log.cpp
     sylar/util.cpp
     sylar/config.cpp
@@ -45,6 +42,9 @@ set(LIB_SRC
 add_library(sylar SHARED ${LIB_SRC})
 force_redefine_file_macro_for_sources(sylar)
 
+ragelmaker(${CMAKE_CURRENT_SOURCE_DIR}/sylar/http/http11_parser.rl ${CMAKE_CURRENT_SOURCE_DIR}/sylar/http)
+ragelmaker(${CMAKE_CURRENT_SOURCE_DIR}/sylar/http/httpclient_parser.rl ${CMAKE_CURRENT_SOURCE_DIR}/sylar/http)
+ragelmaker(${CMAKE_CURRENT_SOURCE_DIR}/sylar/uri.rl ${CMAKE_CURRENT_SOURCE_DIR}/sylar)
 
 set(LIBS
     sylar

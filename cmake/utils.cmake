@@ -15,3 +15,17 @@ function(force_redefine_file_macro_for_sources targetname)
             )
     endforeach()
 endfunction()
+
+function(ragelmaker src_rl outputdir)
+    get_filename_component(src_file ${src_rl} NAME_WE)
+    set(rl_out ${outputdir}/${src_file}.rl.cpp)
+
+    add_custom_command(
+        OUTPUT ${rl_out}
+        COMMAND ragel ${src_rl} -o ${rl_out} -l -C -G2 --error-format=msvc
+        DEPENDS ${src_rl}
+        WORKING_DIRECTORY ${outputdir}
+    )
+
+    set_source_files_properties(${rl_out} PROPERTIES GENERATED TRUE)
+endfunction()

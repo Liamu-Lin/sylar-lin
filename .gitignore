@@ -1,6 +1,7 @@
 *.log
 *.logs
 *.exe
+*.rl.cpp
 
 .vscode
 
