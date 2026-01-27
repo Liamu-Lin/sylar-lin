@@ -136,7 +136,7 @@ Fiber::Fiber():
 }
 
 Fiber::~Fiber(){
-    SYLAR_LOG(g_logger, LogLevel::Level::DEBUG) << "Fiber::~Fiber id=" << id_;
+    //SYLAR_LOG(g_logger, LogLevel::Level::DEBUG) << "Fiber::~Fiber id=" << id_;
 }
 
 bool Fiber::reset(fiber_func func, void* args){

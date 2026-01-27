@@ -89,6 +89,28 @@ Address::ptr Address::lookup_address(const std::string& host, int family, int so
     return nullptr;
 }
 
+bool IPAddress::lookup_ip_address(std::vector<IPAddress::ptr>& result, const std::string& host, int socket_type, int protocol){
+    std::vector<Address::ptr> adds;
+    bool v = Address::lookup_address(adds, host, AF_UNSPEC, socket_type, protocol);
+    if(!v){
+        return false;
+    }
+    for(auto& i : adds){
+        IPAddress::ptr ip = std::dynamic_pointer_cast<IPAddress>(i);
+        if(ip){
+            result.push_back(ip);
+        }
+    }
+    return !result.empty();
+}
+IPAddress::ptr IPAddress::lookup_ip_address(const std::string& host, int socket_type, int protocol){
+    std::vector<IPAddress::ptr> results;
+    bool v = lookup_ip_address(results, host, socket_type, protocol);
+    if(v)
+        return results[0];
+    return nullptr;
+}
+
 bool Address::get_interface_address(std::unordered_map<std::string, std::vector<std::pair<Address::ptr, uint32_t>>>& result, int family){
     ifaddrs* ifap;
     if(getifaddrs(&ifap) != 0){

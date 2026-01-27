@@ -30,9 +30,9 @@ public:
     // ipv4 -- host:port/service
     static bool lookup_address(std::vector<Address::ptr>& result, const std::string& host, 
                                    int family = AF_INET, int socket_type = 0, int protocol = 0);
-
     static Address::ptr lookup_address(const std::string& host, int family = AF_INET,
                                                    int socket_type = 0, int protocol = 0);
+
     // get all interface addresses
     // <interface_name, <address, prefix_len>...>
     static bool get_interface_address(std::unordered_map<std::string, std::vector<std::pair<Address::ptr, uint32_t>>>& result,
@@ -59,6 +59,12 @@ class IPAddress : public Address{
 public:
     typedef std::shared_ptr<IPAddress> ptr;
     static IPAddress::ptr create(const char* address, uint16_t port = 0);
+    // return ip addresses which match the conditions
+    // ipv6 -- [host]:port/service
+    // ipv4 -- host:port/service
+    static bool lookup_ip_address(std::vector<IPAddress::ptr>& result, const std::string& host, int socket_type = 0, int protocol = 0);
+    static IPAddress::ptr lookup_ip_address(const std::string& host, int socket_type = 0, int protocol = 0);
+
     virtual ~IPAddress() {}
     // get broadcast address, address | ~mask: XXXXFF
     virtual IPAddress::ptr get_broadcast_address(uint32_t prefix_len) = 0;

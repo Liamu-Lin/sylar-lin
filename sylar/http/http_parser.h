@@ -16,6 +16,7 @@ public:
 
     bool execute(const char* data, size_t len, size_t& offset);
     bool execute(const std::string& data, size_t& offset);
+
     int is_finished();
     int has_error();
     void set_errno(int v) { errno_ = v; }
@@ -41,10 +42,14 @@ public:
 
     bool execute(const char* data, size_t len, size_t& offset);
     bool execute(const std::string& data, size_t& offset);
+
     int is_finished();
-    bool is_chunked();
+    bool is_chunked() const { return is_chunked_ || parser_.chunked; }
+    bool is_chunk_done() const { return parser_.chunks_done; }
+
     int has_error();
     void set_errno(int v) { errno_ = v; }
+    
     uint64_t get_content_length();
     HttpResponse::ptr get_response() const { return response_; }
     const httpclient_parser& get_parser() const { return parser_; }

@@ -34,6 +34,8 @@ public:
     size_t read(void* buffer, size_t length) override;
     size_t read(ByteArray::ptr ba, size_t length) override;
 
+    bool read_chunked_body(std::string& body, char* buffer, uint64_t buff_size, size_t& remained);
+
     size_t write(const void* buffer, size_t length) override;
     size_t write(ByteArray::ptr ba, size_t length) override;
 
