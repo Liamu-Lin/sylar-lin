@@ -39,6 +39,7 @@ set(LIB_SRC
     sylar/http/http_server.cpp
     sylar/http/http_servlet.cpp
     sylar/http/http_connection.cpp
+    sylar/uri.rl.cpp
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -141,6 +142,11 @@ add_executable(test_http_connection tests/test_http_connection.cpp)
 force_redefine_file_macro_for_sources(test_http_connection)
 add_dependencies(test_http_connection sylar)
 target_link_libraries(test_http_connection ${LIBS})
+
+add_executable(test_uri tests/test_uri.cpp)
+force_redefine_file_macro_for_sources(test_uri)
+add_dependencies(test_uri sylar)
+target_link_libraries(test_uri ${LIBS})
 
 #add_executable(test_routine tests/test_routine.cpp)
 #force_redefine_file_macro_for_sources(test_routine)
