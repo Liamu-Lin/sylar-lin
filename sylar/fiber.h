@@ -53,10 +53,10 @@ public:
     std::shared_ptr<Fiber> get_occupier() const { return occupier_; }
     void change_occupier(std::shared_ptr<Fiber> new_occupier);
 private:
-    std::shared_ptr<Fiber> occupier_;    // the fiber occupying this stack now
-    size_t stack_size_;      // size of the stack
+    std::shared_ptr<Fiber> occupier_;       // the fiber occupying this stack now
+    size_t stack_size_;                     // size of the stack
     std::unique_ptr<char[]> stack_buffer_;  // stack memory buffer
-    char* stack_bottom_;     // stack_buffer + stack_size
+    char* stack_bottom_;                    // stack_buffer + stack_size
 };
 
 class FiberSharedStackPool{

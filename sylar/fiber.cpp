@@ -227,24 +227,26 @@ void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fib
     asm volatile ("movq %%rsp, %0" : "=r" (rsp_value));
     old_fiber->stack_buffer_top_ = (char*)rsp_value;
 
+    // when swap back to new_fiber
+    // we need to use t_fiber_env.swap_in_fiber_ and t_fiber_env.swap_out_fiber_
+    // to restore new_fiber's stack if using shared stack
     if(new_fiber->use_shared_stack_){
         t_fiber_env.swap_in_fiber_ = new_fiber;
-        t_fiber_env.swap_out_fiber_ = old_fiber;
+        t_fiber_env.swap_out_fiber_ = new_fiber->running_mem_->get_occupier();
         new_fiber->running_mem_->change_occupier(new_fiber);
     }
     else{
         t_fiber_env.swap_out_fiber_.reset();
         t_fiber_env.swap_in_fiber_.reset();
     }
+
     swap_context(&old_fiber->context_, &new_fiber->context_);
 
     // // resume stack
     // // the new_fiber is different from the old_fiber,
     // // because when swap back, the old_fiber is now suspended
-    static std::shared_ptr<Fiber> b_new_fiber = t_fiber_env.swap_in_fiber_;
-    static std::shared_ptr<Fiber> b_old_fiber = t_fiber_env.swap_out_fiber_;
-    b_new_fiber = t_fiber_env.swap_in_fiber_;
-    b_old_fiber = t_fiber_env.swap_out_fiber_;
+    Fiber* b_new_fiber = t_fiber_env.swap_in_fiber_.get();
+    Fiber* b_old_fiber = t_fiber_env.swap_out_fiber_.get();
     if(b_new_fiber && b_old_fiber && b_new_fiber != b_old_fiber){
         if(b_new_fiber->save_buffer_ && b_new_fiber->save_size_ > 0)
             memcpy(b_new_fiber->stack_buffer_top_, b_new_fiber->save_buffer_.get(), b_new_fiber->save_size_);
