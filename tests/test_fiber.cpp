@@ -45,15 +45,15 @@ void test_fiber(void* args){
     
     std::shared_ptr<sylar::FiberSharedStackPool> pool(new sylar::FiberSharedStackPool(1, 128 * 1024));
     std::vector<std::shared_ptr<sylar::Fiber>> fibers;
-    for(int i = 1; i <= 2; ++i){
+    for(int i = 1; i <= 5; ++i){
         arg_struct* a = new arg_struct;
         a->a = i * 100;
         a->b = arg->b + " shared stack fiber " + std::to_string(i);
         std::shared_ptr<sylar::Fiber> f;
-        //if(i % 2 == 1)
+        if(i % 2 == 1)
             f.reset(new sylar::Fiber(&func, a, pool));
-        //else
-        //    f.reset(new sylar::Fiber(&func1, a, pool));
+        else
+            f.reset(new sylar::Fiber(&func1, a, pool));
         fibers.push_back(f);
     }
     for(size_t i = 0; i < fibers.size(); ++i){
@@ -62,7 +62,7 @@ void test_fiber(void* args){
     for(int j = 0; j <= 5; ++j){
         for(size_t i = 0; i < fibers.size(); ++i){
             fibers[i]->fiber_resume();
-            std::cout << "main " << j << ' ' << i << std::endl;
+            //std::cout << "main " << j << ' ' << i << std::endl;
         }
     }
 }
@@ -125,9 +125,9 @@ int main(){
     arg.b = "main thread";
 
     test_fiber(&arg);
-    //test_thread_fiber_fiber();
+    test_thread_fiber_fiber();
 
-    //test_fiber_reset();
+    test_fiber_reset();
 
 
     return 0;
