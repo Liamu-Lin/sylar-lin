@@ -109,13 +109,19 @@ void Scheduler::schedule(){
 
         if(have_task && task.fiber_->get_state() != FiberState::TERMINATED
                      && task.fiber_->get_state() != FiberState::EXCEPTION){
-            active_thread_count_.fetch_add(1);
-            task.fiber_->set_env();
-            task.fiber_->fiber_resume();
-            active_thread_count_.fetch_sub(1);
-            if(task.fiber_->get_state() == FiberState::READY ||
-               task.fiber_->get_state() == FiberState::SUSPENDED){
+            // if we hook some IO functions, we need to add the task and yeild this fiber later,
+            // the gap between them would cause the fiber's state to be RUNNING when we take it out of the task list
+            if(task.fiber_->get_state() == FiberState::RUNNING)
                 add_fiber(task.fiber_);
+            else{
+                active_thread_count_.fetch_add(1);
+                task.fiber_->set_env();
+                task.fiber_->fiber_resume();
+                active_thread_count_.fetch_sub(1);
+                if(task.fiber_->get_state() == FiberState::READY ||
+                   task.fiber_->get_state() == FiberState::SUSPENDED){
+                    add_fiber(task.fiber_);
+                }
             }
         }
         // no task, run idle fiber
@@ -123,7 +129,7 @@ void Scheduler::schedule(){
             // scheduler is stopping
             if(idle_fiber->get_state() == FiberState::TERMINATED
                || idle_fiber->get_state() == FiberState::EXCEPTION){
-                SYLAR_LOG(LoggerMgr.get_logger("system"), LogLevel::Level::DEBUG)
+                SYLAR_LOG(LoggerMgr.get_logger("system"), LogLevel::Level::INFO)
                     << "Idle Fiber Terminated or Exception";
                 break;
             }

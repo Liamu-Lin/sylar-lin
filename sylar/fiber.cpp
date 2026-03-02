@@ -139,7 +139,7 @@ Fiber::Fiber():
 Fiber::~Fiber(){
     // using logger will cause fiber resume and dead repeatly, so use std::cout here
     //SYLAR_LOG(g_logger, LogLevel::Level::DEBUG) << "Fiber::~Fiber id=" << id_;
-    std::cout << "Fiber::~Fiber id=" << id_ << std::endl;
+    //std::cout << "Fiber::~Fiber id=" << id_ << std::endl;
 }
 
 bool Fiber::reset(fiber_func func, void* args){
@@ -221,7 +221,7 @@ std::shared_ptr<Fiber> Fiber::get_this(){
 }
 
 void Fiber::set_env(){
-    SYLAR_ASSERT(state_ != FiberState::RUNNING);
+    SYLAR_ASSERT(SYLAR_UNLIKELY(state_ != FiberState::RUNNING));
     env_ = &t_fiber_env;
 }
 
