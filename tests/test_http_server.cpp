@@ -83,7 +83,9 @@ void test_server(void* arg = nullptr){
 int main(){
     sylar::IOManager iom(2);
     
-    iom.add_fiber(test_echo);
+    //iom.add_fiber(test_echo);
+    g_logger->set_level(sylar::LogLevel::Level::WARN);
+    //g_logger->set_level(sylar::LogLevel::Level::INFO);
     iom.add_fiber(test_server);
     
     iom.start();
