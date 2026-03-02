@@ -50,13 +50,13 @@ public:
     char* get_stack_buffer() const { return stack_buffer_.get(); }
     size_t get_stack_size() const { return stack_size_; }
 
-    std::shared_ptr<Fiber> get_occupier() const { return occupier_; }
-    void change_occupier(std::shared_ptr<Fiber> new_occupier);
+    Fiber* get_occupier() const { return occupier_; }
+    void change_occupier(Fiber* new_occupier);
 private:
-    std::shared_ptr<Fiber> occupier_;    // the fiber occupying this stack now
-    size_t stack_size_;      // size of the stack
+    Fiber* occupier_;       // the fiber occupying this stack now
+    size_t stack_size_;                     // size of the stack
     std::unique_ptr<char[]> stack_buffer_;  // stack memory buffer
-    char* stack_bottom_;     // stack_buffer + stack_size
+    char* stack_bottom_;                    // stack_buffer + stack_size
 };
 
 class FiberSharedStackPool{
@@ -82,13 +82,13 @@ public:
     void push_fiber(std::shared_ptr<Fiber> fiber);
     void pop_fiber();
 private:
-    friend void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
+    friend void swap_fiber(Fiber* old_fiber, Fiber* new_fiber);
 private:
     int call_stack_depth_;      // depth of the fiber call stack
     std::vector<std::shared_ptr<Fiber>> fiber_call_stack_;    // the call stack of fibers in this thread
     // used for swapping stacks when using shared stacks
-    std::shared_ptr<Fiber> swap_in_fiber_;      // fiber to swap in
-    std::shared_ptr<Fiber> swap_out_fiber_;     // fiber to swap out
+    Fiber* swap_in_fiber_;      // fiber to swap in
+    Fiber* swap_out_fiber_;     // fiber to swap out
 };
 
 
@@ -126,9 +126,9 @@ public:
 private:
     friend class Scheduler;
     friend FiberEnvironment::FiberEnvironment();
-    friend void FiberMem::change_occupier(std::shared_ptr<Fiber> new_occupier);
+    friend void FiberMem::change_occupier(Fiber* new_occupier);
     friend void make_context(std::shared_ptr<Fiber> fiber);
-    friend void swap_fiber(std::shared_ptr<Fiber> old_fiber, std::shared_ptr<Fiber> new_fiber);
+    friend void swap_fiber(Fiber* old_fiber, Fiber* new_fiber);
 private:
     // init main fiber
     Fiber();

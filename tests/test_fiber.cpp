@@ -62,11 +62,10 @@ void test_fiber(void* args){
     for(int j = 0; j <= 5; ++j){
         for(size_t i = 0; i < fibers.size(); ++i){
             fibers[i]->fiber_resume();
-            std::cout << "main " << j << ' ' << i << std::endl;
+            //std::cout << "main " << j << ' ' << i << std::endl;
         }
     }
 }
-
 
 void test_fiber_fiber(){
     std::string thread_name = sylar::Thread::get_name();
@@ -120,14 +119,12 @@ void test_fiber_reset(){
     }
 }
 
-
 int main(){
-
     //test_thread_fiber_fiber();
     struct arg_struct arg;
     arg.b = "main thread";
 
-    //test_fiber(&arg);
+    test_fiber(&arg);
     test_thread_fiber_fiber();
 
     test_fiber_reset();
