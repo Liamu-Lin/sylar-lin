@@ -35,7 +35,11 @@ void HttpServer::handle_client(Socket::ptr client, void*) {
         }
         // send response
         session->send_response(rsp);
-    } while (is_keepalive_);
+        if(req->is_auto_close()){
+            SYLAR_LOG(g_logger, LogLevel::Level::INFO) << "auto close: " << *client;
+        }
+        if(rsp->is_close()) break;
+    } while (true);
     session->close();
 }
 

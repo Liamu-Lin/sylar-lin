@@ -38,6 +38,7 @@ void test_echo(void* arg = nullptr){
 void test_server(void* arg = nullptr){
     sylar::http::HttpServer::ptr server(new sylar::http::HttpServer);
     server->set_name("sylar_http_server");
+    server->set_keepalive(true);
     sylar::Address::ptr addr = sylar::Address::lookup_address("0.0.0.0:8030");
     server->bind(addr);
 

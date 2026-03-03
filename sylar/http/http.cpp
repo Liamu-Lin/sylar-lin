@@ -93,6 +93,12 @@ void HttpRequest::del_header(const std::string& name){
     headers_.erase(name);
 }
 void HttpRequest::set_header(const std::string& name, const std::string& value){
+    if(strcasecmp(name.c_str(), "connection") == 0){
+        if(strcasecmp(value.c_str(), "close") == 0)
+            set_auto_close(true);
+        else
+            set_auto_close(false);
+    }
     headers_[name] = value;
 }
 
